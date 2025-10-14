@@ -1,7 +1,3 @@
-//Trabalho sobre derivadas - Script
-//Grupo 2
-
-
 let prompt = require("prompt-sync")();
 
 let funcao = '';
