@@ -1,18 +1,61 @@
 let prompt = require("prompt-sync")();
 
-function Funcoes() {
-    let funcoes = [];
-    
-    let numTermos = Number(prompt("Quantos termos tem a função? "));
-    
-    for (let i = 0; i < numTermos; i++) {
-        let coeficiente = Number(prompt(`Digite o coeficiente do termo ${i + 1}: `));
-        let expoente = Number(prompt(`Digite o expoente do termo ${i + 1}: `));
+let funcao = '';
+let funcoes = [];
+
+function Funcoes(funcao) {
+  let termos = [];
+    let termoAtual = '';
+    let coeficiente = 0;
+    let expoente = 0;
+
+    funcao = funcao.replace(/\s+/g, '');
+
+    //console.log(funcao)
+    if(funcao[0] !== '-' && funcao[0] !== '+')
+        funcao = '+' + funcao;
+    //console.log(funcao)
+
+
+    for (let i = 0; i < funcao.length; i++) {
+        const caractere = funcao[i];
+
+    if (caractere === 'x') {
+        if (termoAtual === '' || termoAtual === '+' || termoAtual === '-') {
+            coeficiente = termoAtual === '-' ? -1 : 1;
+        } else {
+            coeficiente = parseInt(termoAtual);
+        }
         
-        funcoes.push([coeficiente, expoente]);
+        if (funcao[i + 1] === '^') {
+            let inicioExpoente = i + 2;
+            let fimExpoente = inicioExpoente;
+            while (fimExpoente < funcao.length && !isNaN(funcao[fimExpoente])) {
+                fimExpoente++;
+            }
+            expoente = parseInt(funcao.slice(inicioExpoente, fimExpoente));
+            i = fimExpoente - 1;
+        } else {
+            expoente = 1;
+        }
+
+        termos.push({ coeficiente, expoente });
+        termoAtual = '';
+    } else if (caractere === '+' || caractere === '-') {
+        if (termoAtual !== '') {
+            if (termoAtual !== 'x' && termoAtual !== 'x^') {
+                coeficiente = parseInt(termoAtual);
+                expoente = 0;
+                termos.push({ coeficiente, expoente });
+            }
+        }
+        termoAtual = caractere;
+        } else {
+            termoAtual += caractere;
+        }
     }
-    
-    return funcoes;
+
+    return termos;
 }
 
 function derivada(coeficiente, expoente) {
@@ -30,7 +73,7 @@ function calcularDerivada(funcoes) {
     let derivadaFuncoes = [];
     
     for (let i = 0; i < funcoes.length; i++) {
-        let [coeficiente, expoente] = funcoes[i];
+        let {coeficiente, expoente} = funcoes[i];
         let derivadaTermo = derivada(coeficiente, expoente);
         derivadaFuncoes.push(derivadaTermo);
     }
@@ -45,7 +88,13 @@ function exibirResultado(derivadaFuncoes) {
         let [coeficiente, expoente] = derivadaFuncoes[i];
         
         if (coeficiente != 0) {
-            resultado += `${coeficiente}x^${expoente}`;
+            if(expoente == 0)
+                resultado += `${coeficiente}`;
+            else if(expoente == 1)
+                resultado += `${coeficiente}x^${expoente}`;
+            else
+                resultado += `${coeficiente}x^${expoente}`;
+            
             if (i < derivadaFuncoes.length - 1) {
                 resultado += " + ";
             }
@@ -55,13 +104,15 @@ function exibirResultado(derivadaFuncoes) {
     console.log(resultado);
 }
 
-let funcoes = Funcoes();
+funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
 
-console.log("\nFunção original:");
+funcoes = Funcoes(funcao);
 
-funcoes.forEach(([coef, expo]) => {
-    console.log(`${coef}x^${expo}`);
-});
+console.log("\nFunção original:", funcao);
+/*for(let i = 0; i < funcoes.length; i++) {
+    const {coeficiente, expoente} = funcoes[i];
+    console.log(`${coeficiente}x^${expoente}`);
+}*/
 
 let derivadaFuncoes = calcularDerivada(funcoes);
 
