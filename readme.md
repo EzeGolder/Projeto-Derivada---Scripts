@@ -1,10 +1,10 @@
 # Projeto: Cálculo de Derivadas em JavaScript
 
-Este projeto tem como objetivo implementar o cálculo de derivadas, pontos máximos e mínimos de funções polinomiais em JavaScript, utilizando **Node.js**.
+Este projeto tem como objetivo implementar o cálculo de derivadas (Primeira e Segunda Ordem), pontos máximos e mínimos de funções polinomiais e exponenciais em JavaScript, utilizando **Node.js**.
 
 # Funcionalidades atuais
 - Entrada interativa dos coeficientes e expoentes da função;
-- Cálculo simbólico da derivada.
+- Cálculo simbólico da derivada (Regra do Tombo).
 
 # Próximos passos
 - Implementar o cálculo automático dos **pontos críticos** (máximos e mínimos);
