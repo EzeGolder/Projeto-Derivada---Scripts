@@ -1,3 +1,6 @@
+# Feito por: Grupo 2
+Ezequiel, Kauã, Miguel e Samuel
+
 # Projeto: Cálculo de Derivadas em JavaScript
 
 Este projeto tem como objetivo implementar o cálculo de derivadas (Primeira e Segunda Ordem), pontos máximos e mínimos de funções polinomiais e exponenciais em JavaScript, utilizando **Node.js**.
