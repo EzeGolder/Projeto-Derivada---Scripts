@@ -1,6 +1,8 @@
+# Trabalho Sobre Derivadas - Scripts
+# Grupo 2
 
--Estado do Desenvolvimento-
-1.1.	Situação atual
+# -Estado do Desenvolvimento-
+1.	Situação atual
 O projeto consegue receber os termos de uma função polinomial, calcular e exibir a derivada da função com base em tal entrada.
 Ordem das funções:
 . Entrada de coeficientes e expoentes;

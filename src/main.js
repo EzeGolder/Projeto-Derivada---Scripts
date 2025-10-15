@@ -91,12 +91,12 @@ function exibirResultado(derivadaFuncoes) {
             if(expoente == 0)
                 resultado += `${coeficiente}`;
             else if(expoente == 1)
-                resultado += `${coeficiente}x^${expoente}`;
+                resultado += `${coeficiente}x`;
             else
                 resultado += `${coeficiente}x^${expoente}`;
             
-            if (i < derivadaFuncoes.length - 1) {
-                resultado += " + ";
+            if (i < derivadaFuncoes.length - 1 && derivadaFuncoes[i + 1][0] > 0) {
+                resultado += "+";
             }
         }
     }
