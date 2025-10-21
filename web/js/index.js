@@ -1,5 +1,7 @@
 let funcao = '';
 let funcoes = [];
+let primeira_derivada;
+let segunda_derivada;
 
 //Função que vai converter fração para número com virgula
 function parseFracao(fraction) {
@@ -121,7 +123,8 @@ function exibirResultado(derivadaFuncoes) {
         resultado += "0"
     }
 
-    document.getElementById("resultado").innerText = resultado;
+    
+    return resultado.replace("Derivada: ", "")
 }
 
 function mostrarResultado() {
@@ -130,8 +133,18 @@ function mostrarResultado() {
 
     console.log("\nFunção original:", funcao);
 
+    //Calculo e demonstração de derivada de primero grau
     let derivadaFuncoes = calcularDerivada(funcoes);
-    exibirResultado(derivadaFuncoes);
+    primeira_derivada = exibirResultado(derivadaFuncoes);
+
+    //Calculo e demonstração de derivada de segundo grau
+    funcoes = Funcoes(primeira_derivada)
+    derivadaFuncoes = calcularDerivada(funcoes);
+    segunda_derivada = exibirResultado(derivadaFuncoes)
+
+    let resultado = `Resultados: \n\nDerivada de primeiro grau:\n${primeira_derivada}\nDerivada de segundo grau:\n${segunda_derivada}`
+
+    document.getElementById("resultado").innerText = resultado;
 }
 
 const botao = document.getElementById("derivar");

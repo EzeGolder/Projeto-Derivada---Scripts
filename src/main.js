@@ -1,4 +1,6 @@
 let prompt = require("prompt-sync")();
+let primeira_derivada;
+let segunda_derivada;
 
 //Função que vai converter fração para número com virgula
 function parseFracao(fraction) {
@@ -140,7 +142,7 @@ function inserir_exibir(funcao, grau){
     return exibirResultado(derivadaFuncoes);
 
 }
-
-inserir_exibir(inserir_exibir(funcao, "primeiro"), "segundo")
+primeira_derivada = inserir_exibir(funcao, "primeiro");
+segunda_derivada = inserir_exibir(primeira_derivada, "segundo")
 
 
