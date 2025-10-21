@@ -90,9 +90,8 @@ function calcularDerivada(funcoes) {
 
     return derivadaFuncoes;
 }
-
 function exibirResultado(derivadaFuncoes) {
-    let resultado = "Derivada: ";
+    let resultado = "";
     let primeira = true;
 
     for (let i = 0; i < derivadaFuncoes.length; i++) {
@@ -117,20 +116,31 @@ function exibirResultado(derivadaFuncoes) {
         }
     }
 
+
     if (resultado == "Derivada: ") {
         resultado += "0";
     }
-
+    
     console.log(resultado);
+
+    return resultado
 }
 
 //execuçao do programa
 let funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
 
-let funcoes = Funcoes(funcao);
-
 console.log("\nFunção original:", funcao);
+function inserir_exibir(funcao, grau){
+    let funcoes = Funcoes(funcao);
 
-let derivadaFuncoes = calcularDerivada(funcoes);
+    let derivadaFuncoes = calcularDerivada(funcoes);
 
-exibirResultado(derivadaFuncoes);
+    console.log(`Derivada de ${grau} grau`)
+
+    return exibirResultado(derivadaFuncoes);
+
+}
+
+inserir_exibir(inserir_exibir(funcao, "primeiro"), "segundo")
+
+
