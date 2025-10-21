@@ -1,6 +1,6 @@
 let prompt = require("prompt-sync")();
 
-//Funnção que vai converter fração para número com virgula
+//Função que vai converter fração para número com virgula
 function parseFracao(fraction) {
     if (fraction.includes('/')) {
         const [numerador, denominador] = fraction.split('/').map(Number);

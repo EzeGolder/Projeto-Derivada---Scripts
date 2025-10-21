@@ -1,6 +1,15 @@
 let funcao = '';
 let funcoes = [];
 
+//Função que vai converter fração para número com virgula
+function parseFracao(fraction) {
+    if (fraction.includes('/')) {
+        const [numerador, denominador] = fraction.split('/').map(Number);
+        return numerador / denominador;
+    }
+    return parseFloat(fraction);
+}
+
 function Funcoes(funcao) {
     let termos = [];
     let termoAtual = '';
@@ -8,6 +17,7 @@ function Funcoes(funcao) {
     let expoente = 0;
 
     funcao = funcao.replace(/\s+/g, '');
+    funcao = funcao.replace(/,/g, '.');
 
     if (funcao[0] !== '-' && funcao[0] !== '+')
         funcao = '+' + funcao;
@@ -19,7 +29,7 @@ function Funcoes(funcao) {
             if (termoAtual === '' || termoAtual === '+' || termoAtual === '-') {
                 coeficiente = termoAtual === '-' ? -1 : 1;
             } else {
-                coeficiente = parseInt(termoAtual);
+                coeficiente = parseFracao(termoAtual);
             }
 
             if (funcao[i + 1] === '^') {
@@ -39,7 +49,7 @@ function Funcoes(funcao) {
         } else if (caractere === '+' || caractere === '-') {
             if (termoAtual !== '') {
                 if (termoAtual !== 'x' && termoAtual !== 'x^') {
-                    coeficiente = parseInt(termoAtual);
+                    coeficiente = parseFracao(termoAtual);
                     expoente = 0;
                     termos.push({ coeficiente, expoente });
                 }
@@ -47,7 +57,12 @@ function Funcoes(funcao) {
             termoAtual = caractere;
         } else {
             termoAtual += caractere;
-        }
+        }   
+    }
+    if (termoAtual != '') {
+        coeficiente = parseFracao(termoAtual);
+        expoente = 0;
+        termos.push({ coeficiente, expoente });
     }
 
     return termos;
@@ -78,22 +93,32 @@ function calcularDerivada(funcoes) {
 
 function exibirResultado(derivadaFuncoes) {
     let resultado = "Derivada: ";
+    let primeira = true;
 
     for (let i = 0; i < derivadaFuncoes.length; i++) {
         let [coeficiente, expoente] = derivadaFuncoes[i];
 
         if (coeficiente != 0) {
-            if (expoente == 0)
-                resultado += `${coeficiente}`;
-            else if (expoente == 1)
-                resultado += `${coeficiente}x^${expoente}`;
-            else
-                resultado += `${coeficiente}x^${expoente}`;
+            let sinal = coeficiente > 0 ? (primeira ? '' : ' + ') : ' - ';
+            let valorAbsoluto = Math.abs(coeficiente);
 
-            if (i < derivadaFuncoes.length - 1) {
-                resultado += " + ";
-            }
+
+            //isso aqui é pra arredondar, não é a melhor coisa do mundo, mas achei necessário
+            valorAbsoluto = parseFloat(valorAbsoluto.toFixed(2));
+            
+            if (expoente == 0)
+                resultado += `${sinal}${valorAbsoluto}`;
+            else if (expoente == 1)
+                resultado += `${sinal}${valorAbsoluto}x`;
+            else
+                resultado += `${sinal}${valorAbsoluto}x^${expoente}`;
+
+            primeira = false;
         }
+    }
+
+    if(resultado == "Derivada: "){
+        resultado += "0"
     }
 
     document.getElementById("resultado").innerText = resultado;
