@@ -124,10 +124,6 @@ function exibirResultado(derivadaFuncoes) {
         resultado += "0";
     }
     
-    if(resultado == 0){
-        return 0;
-    }
-
     console.log(resultado);
 
     return resultado;
