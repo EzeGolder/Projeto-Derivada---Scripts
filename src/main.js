@@ -11,6 +11,7 @@ function parseFracao(fraction) {
     return parseFloat(fraction);
 }
 
+//Transforma funções em forma de strings em um array de coeficientes e expoentes
 function Funcoes(funcao) {
     let termos = [];
     let termoAtual = '';
@@ -93,6 +94,7 @@ function calcularDerivada(funcoes) {
     return derivadaFuncoes;
 }
 
+//Retorno de uma função (derivada) em forma de string
 function exibirResultado(derivadaFuncoes) {
     let resultado = "";
     let primeira = true;
@@ -120,7 +122,7 @@ function exibirResultado(derivadaFuncoes) {
     }
 
 
-    if (resultado == "Derivada: ") {
+    if (resultado == "") {
         resultado += "0";
     }
     
@@ -129,6 +131,7 @@ function exibirResultado(derivadaFuncoes) {
     return resultado;
 }
 
+//Função que controla as saídas das derivadas
 function inserir_exibir(funcao, grau){
     let funcoes = Funcoes(funcao);
 
@@ -140,6 +143,7 @@ function inserir_exibir(funcao, grau){
 
 }
 
+//Calcular o Y de uma função com base no X
 function calcularX(Derivada, x){
     let resultado = 0;
 
@@ -155,14 +159,32 @@ function calcularX(Derivada, x){
     return resultado;
 }
 
+
+//Descobrir ponto físico
 function pontoCritico(Derivada){
+    termosDerivada = Funcoes(Derivada)
+    if(termosDerivada.length == 1 && termosDerivada[0].expoente == 0){
+        return null
+    }
+
+
     let maxIntervalo = 100;
     let minIntervalo = -100;
+    let maxIteracoes = 10000;
     let limite = 0.0001;
+    let iteracao = 0;
     let valorX = (maxIntervalo + minIntervalo) / 2;
+
+    let fmin = calcularX(Derivada, minIntervalo)
+    let fmax = calcularX(Derivada,maxIntervalo)
+
+    if(fmin*fmax > 0 ){
+        console.log("A derivada não cruxa o eixo x no intervalo indicado")
+    }
+
     let valorDerivada = calcularX(Derivada, valorX);
 
-    while(Math.abs(valorDerivada) > limite){
+    while(Math.abs(valorDerivada) > limite && iteracao < maxIteracoes){
         if(Math.abs(valorDerivada) < limite){
             return valorX;
         }
@@ -175,19 +197,63 @@ function pontoCritico(Derivada){
         
         valorX = (maxIntervalo + minIntervalo) / 2;
         valorDerivada = calcularX(Derivada, valorX);
+        iteracao++;
     }
+        if(iteracao >= maxIteracoes){
+            console.log(
+                "Limite de iterações alcançado")
+            return null;
+        }    
 
     return valorX;
 }
 
+function minOuMax(derivada2, x){
+    if(derivada2 == ""){
+        return "Não existe ponto crítico"
+    }
+
+    y = calcularX(derivada2, x)
+    if(y < 0){
+        return "Máximo"
+    }else if(y>0){
+        return "Mínimo"
+    }else{
+        return "Nulo"
+    }
+}
+
+
+
 //execuçao do programa
+//ENTRADA
 let funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
 
 console.log("\nFunção original:", funcao);
 
+
+//DERIVADAS
+//Derivada de primeiro grau
 primeira_derivada = inserir_exibir(funcao, "primeiro");
+
+//Derivada de segundo grau
 segunda_derivada = inserir_exibir(primeira_derivada, "segundo")
 
+
+//PONTO CRÍTICO
+//X do ponto crítico
 let xZero = pontoCritico(primeira_derivada);
 
-console.log("\nPonto crítico:", xZero);
+//Y do ponto crítico
+let yZero = calcularX(funcao, xZero)
+
+//Tipo do ponto crítico (Máximo ou Mínimo)
+tipo_ponto = minOuMax(segunda_derivada, xZero);
+
+if(xZero == null){
+    console.log("Ponto crítico inexistente ou fora do requisitos de intervalo")
+
+}else{
+    console.log(`Ponto ${tipo_ponto}: (${xZero.toFixed(4)},${yZero.toFixed(4)})` );
+    
+}
