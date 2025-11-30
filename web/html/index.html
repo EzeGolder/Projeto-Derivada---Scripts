@@ -1,21 +1,55 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
-  <title>Calculadora de Derivada</title>
+  <title>Derivadas e Integrais</title>
   <link rel="stylesheet" href="../css/index.css">
 </head>
+
 <body>
-    <div class="calculadora-derivada">
-        <h1>Calculadora de Derivada</h1>
+  <div class="calculadora-derivada">
 
-        <p id="exemplo">Digite a função: (ex: 3x^2 - 2x + 1)</p>
-        <input type="text" id="funcao">
-        <br>
-        <button type="button" onclick="mostrarResultado()">Derivar</button>
-        <p id="resultado"></p>
+    <h1>Derivadas & Integrais</h1>
 
-        <script src="../js/index.js"></script>
+    <div id="modo">
+      <label><input type="radio" name="operacao" value="derivada" checked> Derivada</label>
+      <label><input type="radio" name="operacao" value="integral"> Integral</label>
     </div>
+
+    <div id="intervalo-opcao">
+      <label>
+        <input type="radio" name="intervaloModo" value="padrao" checked>
+        Intervalo padrão (-100 a 100)
+      </label>
+
+      <label>
+        <input type="radio" name="intervaloModo" value="custom">
+        Intervalo personalizado
+      </label>
+    </div>
+
+    <!-- Inputs que só aparecem se o usuário marcar intervalo personalizado -->
+    <div id="intervalos" style="display: none;">
+      <input type="number" id="minIntervalo" placeholder="Mínimo">
+      <input type="number" id="maxIntervalo" placeholder="Máximo">
+    </div>
+
+
+
+    <p id="exemplo">Digite a função: (ex: 3x^2 - 2x + 1)</p>
+    <input type="text" id="funcao">
+
+    <button id="calcular">Calcular</button>
+
+    <div id="resultado-area">
+      <h3>Resultados</h3>
+      <pre id="resultado"></pre>
+    </div>
+
+
+    <script src="../js/index.js"></script>
+  </div>
 </body>
+
 </html>

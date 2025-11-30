@@ -11,7 +11,8 @@ body {
   background-color: #ffffff;
   padding: 40px;
   text-align: center;
-  width: 350px;
+  width: 380px;
+  border-radius: 10px;
 }
 
 .calculadora-derivada h1 {
@@ -19,12 +20,29 @@ body {
   margin-bottom: 25px;
 }
 
-.calculadora-derivada #exemplo{
+
+#modo {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+#modo label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+#exemplo {
   color: #868686;
   font-size: 12px;
 }
 
-.calculadora-derivada input {
+input[type="text"] {
   padding: 10px;
   width: 80%;
   border: 1px solid #ccc;
@@ -32,25 +50,77 @@ body {
   font-size: 16px;
 }
 
-.calculadora-derivada button {
+button {
   margin-top: 15px;
   padding: 10px 20px;
   background-color: #b02b2b;
-  border: 1px solid #ccc;
   color: white;
-  border: none;
   width: 85%;
   border-radius: 15px;
   font-size: 16px;
+  border: none;
 }
 
-.calculadora-derivada button:hover {
+button:hover {
   background-color: #822c2c;
 }
 
-.calculadora-derivada #resultado {
+#resultado {
   margin-top: 25px;
-  font-weight: bolder;
-  font-size: 24px;
+  font-weight: 600;
+  font-size: 19px;
+  color: #222;
+  white-space: pre-line;
+}
+
+#intervalo-opcao {
+  margin-top: 20px;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#intervalos {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#intervalos input {
+  width: 45%;
+}
+
+#resultado-area {
+  margin-top: 25px;
+  padding: 15px;
+  background: #f4f4f4;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+
+  text-align: left;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+
+
+  height: 240px;          /* altura inicial grande */
+  overflow-y: auto;       /* ativa scroll interno se precisar */
+  box-sizing: border-box; /* garante que padding não estoura o tamanho */
+}
+
+
+#resultado-area h3 {
+  margin-top: 0;
+  color: #444;
+  font-size: 18px;
+  text-align: center;
+}
+
+#resultado {
+  font-size: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
   color: #222;
 }
+

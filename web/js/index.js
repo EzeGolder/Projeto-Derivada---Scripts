@@ -1,33 +1,77 @@
-let funcao = '';
-let funcoes = [];
-let primeira_derivada;
-let segunda_derivada;
+//Javascript para a manipulação da página web da calculadora
 
-//Função que vai converter fração para número com virgula
+//Adição de referências a elementos da página:
+
+// Mostrar campos apenas quando o usuário quiser intervalo personalizado
+document.querySelectorAll("input[name='intervaloModo']").forEach(radio => {
+    radio.addEventListener("change", () => {
+        let custom = document.querySelector("input[name='intervaloModo']:checked").value;
+        document.getElementById("intervalos").style.display =
+            custom === "custom" ? "flex" : "none";
+    });
+});
+
+// Controlar visibilidade dos radios de intervalo com base na operação escolhida
+function atualizarVisibilidadeIntervalo() {
+    let operacao = document.querySelector("input[name='operacao']:checked").value;
+
+    if (operacao === "derivada") {
+        document.getElementById("intervalo-opcao").style.display = "flex";
+
+        let modo = document.querySelector("input[name='intervaloModo']:checked").value;
+        document.getElementById("intervalos").style.display =
+            modo === "custom" ? "flex" : "none";
+
+    } else {
+        // Integral selecionada -> esconder tudo
+        document.getElementById("intervalo-opcao").style.display = "none";
+        document.getElementById("intervalos").style.display = "none";
+    }
+}
+
+document.querySelectorAll("input[name='operacao']").forEach(radio => {
+    radio.addEventListener("change", atualizarVisibilidadeIntervalo);
+});
+
+document.querySelectorAll("input[name='intervaloModo']").forEach(radio => {
+    radio.addEventListener("change", atualizarVisibilidadeIntervalo);
+});
+
+atualizarVisibilidadeIntervalo();
+
+//Funções da calculadora:
+
+
+//Transformar fração em número único
+
 function parseFracao(fraction) {
     if (fraction.includes('/')) {
-        const [numerador, denominador] = fraction.split('/').map(Number);
-        return numerador / denominador;
+        const [n, d] = fraction.split('/').map(Number);
+        return n / d;
     }
     return parseFloat(fraction);
 }
 
+//Método que trata as funções, devolvendo um vetor de monômios
 function Funcoes(funcao) {
+
+    // Normalização
+    funcao = funcao.toLowerCase();
+    funcao = funcao.replace(/\s+/g, '');
+
+    if (funcao[0] !== '+' && funcao[0] !== '-')
+        funcao = '+' + funcao;
+
     let termos = [];
     let termoAtual = '';
     let coeficiente = 0;
     let expoente = 0;
 
-    funcao = funcao.replace(/\s+/g, '');
-    funcao = funcao.replace(/,/g, '.');
-
-    if (funcao[0] !== '-' && funcao[0] !== '+')
-        funcao = '+' + funcao;
-
     for (let i = 0; i < funcao.length; i++) {
-        const caractere = funcao[i];
+        const c = funcao[i];
 
-        if (caractere === 'x') {
+        if (c === 'x') {
+
             if (termoAtual === '' || termoAtual === '+' || termoAtual === '-') {
                 coeficiente = termoAtual === '-' ? -1 : 1;
             } else {
@@ -35,33 +79,39 @@ function Funcoes(funcao) {
             }
 
             if (funcao[i + 1] === '^') {
-                let inicioExpoente = i + 2;
-                let fimExpoente = inicioExpoente;
-                while (fimExpoente < funcao.length && !isNaN(funcao[fimExpoente])) {
-                    fimExpoente++;
+                let inicio = i + 2;
+                let fim = inicio;
+
+                while (fim < funcao.length && (!isNaN(funcao[fim]))) {
+                    fim++;
                 }
-                expoente = parseInt(funcao.slice(inicioExpoente, fimExpoente));
-                i = fimExpoente - 1;
+
+                expoente = parseInt(funcao.slice(inicio, fim));
+                i = fim - 1;
             } else {
                 expoente = 1;
             }
 
             termos.push({ coeficiente, expoente });
             termoAtual = '';
-        } else if (caractere === '+' || caractere === '-') {
+        }
+
+        else if (c === '+' || c === '-') {
             if (termoAtual !== '') {
-                if (termoAtual !== 'x' && termoAtual !== 'x^') {
-                    coeficiente = parseFracao(termoAtual);
-                    expoente = 0;
-                    termos.push({ coeficiente, expoente });
-                }
+                coeficiente = parseFracao(termoAtual);
+                expoente = 0;
+                termos.push({ coeficiente, expoente });
             }
-            termoAtual = caractere;
-        } else {
-            termoAtual += caractere;
-        }   
+            termoAtual = c;
+        }
+
+        else {
+            if (!isNaN(c) || c === '.' || c === '/')
+                termoAtual += c;
+        }
     }
-    if (termoAtual != '') {
+
+    if (termoAtual !== '') {
         coeficiente = parseFracao(termoAtual);
         expoente = 0;
         termos.push({ coeficiente, expoente });
@@ -70,82 +120,210 @@ function Funcoes(funcao) {
     return termos;
 }
 
-function derivada(coeficiente, expoente) {
-    if (expoente == 0) {
-        return [0, 0];
-    }
 
-    let novoCoeficiente = coeficiente * expoente;
-    let novoExpoente = expoente - 1;
+//Derivadas
 
-    return [novoCoeficiente, novoExpoente];
+function derivadaTombo(c, e) {
+    if (e === 0) return [0, 0];
+    return [c * e, e - 1];
 }
 
 function calcularDerivada(funcoes) {
-    let derivadaFuncoes = [];
-
-    for (let i = 0; i < funcoes.length; i++) {
-        let { coeficiente, expoente } = funcoes[i];
-        let derivadaTermo = derivada(coeficiente, expoente);
-        derivadaFuncoes.push(derivadaTermo);
-    }
-
-    return derivadaFuncoes;
+    return funcoes.map(t => derivadaTombo(t.coeficiente, t.expoente));
 }
 
 function exibirResultado(derivadaFuncoes) {
-    let resultado = "Derivada: ";
+    let r = "";
     let primeira = true;
 
-    for (let i = 0; i < derivadaFuncoes.length; i++) {
-        let [coeficiente, expoente] = derivadaFuncoes[i];
+    for (let [c, e] of derivadaFuncoes) {
+        if (c !== 0) {
+            let sinal = c > 0 ? (primeira ? "" : "+") : "-";
+            let abs = Math.abs(c).toFixed(2);
 
-        if (coeficiente != 0) {
-            let sinal = coeficiente > 0 ? (primeira ? '' : ' + ') : ' - ';
-            let valorAbsoluto = Math.abs(coeficiente);
-
-
-            //isso aqui é pra arredondar, não é a melhor coisa do mundo, mas achei necessário
-            valorAbsoluto = parseFloat(valorAbsoluto.toFixed(2));
-            
-            if (expoente == 0)
-                resultado += `${sinal}${valorAbsoluto}`;
-            else if (expoente == 1)
-                resultado += `${sinal}${valorAbsoluto}x`;
-            else
-                resultado += `${sinal}${valorAbsoluto}x^${expoente}`;
+            if (e === 0) r += `${sinal}${abs}`;
+            else if (e === 1) r += `${sinal}${abs}x`;
+            else r += `${sinal}${abs}x^${e}`;
 
             primeira = false;
         }
     }
+    return r || "0";
+}
 
-    if(resultado == "Derivada: "){
-        resultado += "0"
+
+//Ponto Crítico
+
+function calcularX(funcao, x) {
+    let termos = Funcoes(funcao);
+    let r = 0;
+    for (let t of termos) r += t.coeficiente * Math.pow(x, t.expoente);
+    return r;
+}
+
+function pontoCritico(derivadaStr, min = -100, max = 100) {
+
+    // 1. Amostragem inicial - detectar possíveis mudanças de sinal
+    let passos = 2000; // QUanto mais denso mais preciso
+    let delta = (max - min) / passos;
+
+    let anterior = calcularX(derivadaStr, min);
+    let candidatos = [];
+
+    for (let i = 1; i <= passos; i++) {
+        let xAtual = min + i * delta;
+        let valor = calcularX(derivadaStr, xAtual);
+
+        // Detectar mudança de sinal (método original)
+        if (anterior * valor < 0) {
+            candidatos.push([xAtual - delta, xAtual]);
+        }
+
+        // Detectar valores muito próximos de zero (pontos de sela)
+        if (Math.abs(valor) < 0.0005) {
+            candidatos.push([xAtual - delta, xAtual + delta]);
+        }
+
+        anterior = valor;
     }
 
-    
-    return resultado.replace("Derivada: ", "")
+    // Se não achou nada, não há ponto crítico
+    if (candidatos.length === 0) return null;
+
+    // 2. Para cada janela encontrada, aplicar método binário
+    let limite = 0.0001;
+
+    for (let [a, b] of candidatos) {
+        let min2 = a;
+        let max2 = b;
+
+        let it = 0;
+        let x = (min2 + max2) / 2;
+        let fx = calcularX(derivadaStr, x);
+
+        while (Math.abs(fx) > limite && it < 10000) {
+            
+            if (fx > 0) max2 = x;
+            else min2 = x;
+
+            x = (min2 + max2) / 2;
+            fx = calcularX(derivadaStr, x);
+            it++;
+        }
+
+        if (it < 10000) {
+            return x; // Encontrou!
+        }
+    }
+
+    return null; // Se todos os intervalos falharam
 }
 
-function mostrarResultado() {
-    funcao = document.getElementById("funcao").value;
-    funcoes = Funcoes(funcao);
 
-    console.log("\nFunção original:", funcao);
-
-    //Calculo e demonstração de derivada de primero grau
-    let derivadaFuncoes = calcularDerivada(funcoes);
-    primeira_derivada = exibirResultado(derivadaFuncoes);
-
-    //Calculo e demonstração de derivada de segundo grau
-    funcoes = Funcoes(primeira_derivada)
-    derivadaFuncoes = calcularDerivada(funcoes);
-    segunda_derivada = exibirResultado(derivadaFuncoes)
-
-    let resultado = `Resultados: \n\nDerivada de primeiro grau:\n${primeira_derivada}\nDerivada de segundo grau:\n${segunda_derivada}`
-
-    document.getElementById("resultado").innerText = resultado;
+function minOuMax(derivada2, x) {
+    let y = calcularX(derivada2, x);
+    if (y < 0) return "Máximo";
+    if (y > 0) return "Mínimo";
+    return "Ponto nulo";
 }
 
-const botao = document.getElementById("derivar");
-botao.addEventListener("click", mostrarResultado);
+
+//Integrais
+
+function integralSubida(c, e) {
+    return [c / (e + 1), e + 1];
+}
+
+function calcularIntegral(funcoes) {
+    return funcoes.map(t =>
+        t.expoente === 0 ? [t.coeficiente, 1] : integralSubida(t.coeficiente, t.expoente)
+    );
+}
+
+function exibirIntegral(intFuncoes) {
+    let r = "";
+    let primeira = true;
+
+    for (let [c, e] of intFuncoes) {
+        if (c !== 0) {
+            let sinal = c > 0 ? (primeira ? "" : "+") : "-";
+            let abs = Math.abs(c).toFixed(2);
+
+            if (e === 1) r += `${sinal}${abs}x`;
+            else r += `${sinal}${abs}x^${e}`;
+
+            primeira = false;
+        }
+    }
+    return (r || "0") + "+C";
+}
+
+
+//Funções do botão de enviar 
+
+document.getElementById("calcular").addEventListener("click", () => {
+    let funcao = document.getElementById("funcao").value;
+    let operacao = document.querySelector("input[name='operacao']:checked").value;
+
+    let termos = Funcoes(funcao);
+    let texto = "";
+
+    if (operacao === "derivada") {
+
+        let d1 = exibirResultado(calcularDerivada(termos));
+
+        let d1limpo = d1.replace(/\s+/g, '');
+        let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
+
+        let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
+        let min, max;
+
+        if (intervaloModo === "custom") {
+            min = parseFloat(document.getElementById("minIntervalo").value);
+            max = parseFloat(document.getElementById("maxIntervalo").value);
+
+            if (isNaN(min) || isNaN(max)) {
+                document.getElementById("resultado").innerText =
+                    "Erro: Insira valores válidos para o intervalo.";
+                return;
+            }
+
+            if (min >= max) {
+                document.getElementById("resultado").innerText =
+                    "Erro: O mínimo deve ser menor que o máximo.";
+                return;
+            }
+        } else {
+            min = -100;
+            max = 100;
+        }
+
+        let xCrit = pontoCritico(d1limpo, min, max);
+
+        if (xCrit === null) {
+            texto =
+                `1ª Derivada: ${d1}
+                2ª Derivada: ${d2}
+
+                Não há ponto crítico no intervalo (${min}, ${max}).`;
+        } else {
+            let yCrit = calcularX(funcao, xCrit);
+            let tipo = minOuMax(d2, xCrit);
+
+            texto =
+                `1ª Derivada: ${d1}
+                2ª Derivada: ${d2}
+
+                Ponto crítico encontrado:
+                x = ${xCrit.toFixed(4)}
+                y = ${yCrit.toFixed(4)}
+                Tipo: ${tipo}`;
+        }
+
+    } else {
+        let integral = exibirIntegral(calcularIntegral(termos));
+        texto = `Integral indefinida:\n${integral}`;
+    }
+
+    document.getElementById("resultado").innerText = texto;
+});
