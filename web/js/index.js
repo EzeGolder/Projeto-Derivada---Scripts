@@ -1,3 +1,8 @@
+/*
+### **Grupo 2 — 
+## Integrantes: Bruno Enrique Medeiros Costa, Ezequiel da Silva, Miguel Rocha de Araujo, Rogério, Samuel de Macedo Ferrari**
+
+*/
 //Javascript para a manipulação da página web da calculadora
 
 //Adição de referências a elementos da página:
@@ -15,7 +20,8 @@ document.querySelectorAll("input[name='intervaloModo']").forEach(radio => {
 function atualizarVisibilidadeIntervalo() {
     let operacao = document.querySelector("input[name='operacao']:checked").value;
 
-    if (operacao === "derivada") {
+    if (operacao === "derivada" || operacao === "trapz") {
+        // Derivada e integral numérica precisam de intervalos
         document.getElementById("intervalo-opcao").style.display = "flex";
 
         let modo = document.querySelector("input[name='intervaloModo']:checked").value;
@@ -23,11 +29,12 @@ function atualizarVisibilidadeIntervalo() {
             modo === "custom" ? "flex" : "none";
 
     } else {
-        // Integral selecionada -> esconder tudo
+        // Integral simbólica não usa intervalo
         document.getElementById("intervalo-opcao").style.display = "none";
         document.getElementById("intervalos").style.display = "none";
     }
 }
+
 
 document.querySelectorAll("input[name='operacao']").forEach(radio => {
     radio.addEventListener("change", atualizarVisibilidadeIntervalo);
@@ -259,6 +266,43 @@ function exibirIntegral(intFuncoes) {
 }
 
 
+//     Regra dos Trapézios (Integração Numérica)
+
+
+// Integra a função no intervalo [a, b] usando n trapézios
+function trapezios(funcaoStr, a, b, n = 2000) {
+
+    // Garantir valores válidos
+    a = parseFloat(a);
+    b = parseFloat(b);
+    n = parseInt(n);
+
+    if (isNaN(a) || isNaN(b) || isNaN(n) || n <= 0) {
+        return "Erro: valores inválidos para a integral numérica.";
+    }
+
+    // Largura dos trapézios
+    let h = (b - a) / n;
+    let soma = 0;
+
+    // Soma das partes internas (todas menos as bordas)
+    for (let i = 1; i < n; i++) {
+        let x = a + i * h;
+        soma += calcularX(funcaoStr, x);
+    }
+
+    // Fórmula final dos trapézios
+    let resultado = (h / 2) * (
+        calcularX(funcaoStr, a) +
+        2 * soma +
+        calcularX(funcaoStr, b)
+    );
+
+    return resultado;
+}
+
+
+
 //Funções do botão de enviar 
 
 document.getElementById("calcular").addEventListener("click", () => {
@@ -270,60 +314,91 @@ document.getElementById("calcular").addEventListener("click", () => {
 
     if (operacao === "derivada") {
 
-        let d1 = exibirResultado(calcularDerivada(termos));
+    
+    //  DERIVADAS
+    
 
-        let d1limpo = d1.replace(/\s+/g, '');
-        let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
+    let d1 = exibirResultado(calcularDerivada(termos));
+    let d1limpo = d1.replace(/\s+/g, '');
+    let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
 
-        let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
-        let min, max;
+    // Intervalo
+    let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
+    let min, max;
 
-        if (intervaloModo === "custom") {
-            min = parseFloat(document.getElementById("minIntervalo").value);
-            max = parseFloat(document.getElementById("maxIntervalo").value);
+    if (intervaloModo === "custom") {
+        min = parseFloat(document.getElementById("minIntervalo").value);
+        max = parseFloat(document.getElementById("maxIntervalo").value);
 
-            if (isNaN(min) || isNaN(max)) {
-                document.getElementById("resultado").innerText =
-                    "Erro: Insira valores válidos para o intervalo.";
-                return;
-            }
-
-            if (min >= max) {
-                document.getElementById("resultado").innerText =
-                    "Erro: O mínimo deve ser menor que o máximo.";
-                return;
-            }
-        } else {
-            min = -100;
-            max = 100;
+        if (isNaN(min) || isNaN(max) || min >= max) {
+            document.getElementById("resultado").innerText =
+                "Erro: intervalo inválido.";
+            return;
         }
-
-        let xCrit = pontoCritico(d1limpo, min, max);
-
-        if (xCrit === null) {
-            texto =
-                `1ª Derivada: ${d1}
-                2ª Derivada: ${d2}
-
-                Não há ponto crítico no intervalo (${min}, ${max}).`;
-        } else {
-            let yCrit = calcularX(funcao, xCrit);
-            let tipo = minOuMax(d2, xCrit);
-
-            texto =
-                `1ª Derivada: ${d1}
-                2ª Derivada: ${d2}
-
-                Ponto crítico encontrado:
-                x = ${xCrit.toFixed(4)}
-                y = ${yCrit.toFixed(4)}
-                Tipo: ${tipo}`;
-        }
-
     } else {
-        let integral = exibirIntegral(calcularIntegral(termos));
-        texto = `Integral indefinida:\n${integral}`;
+        min = -100;
+        max = 100;
     }
+
+    let xCrit = pontoCritico(d1limpo, min, max);
+
+    if (xCrit === null) {
+        texto =
+            `1ª Derivada: ${d1}
+            2ª Derivada: ${d2}
+
+            Não há ponto crítico no intervalo (${min}, ${max}).`;
+    } else {
+        let yCrit = calcularX(funcao, xCrit);
+        let tipo = minOuMax(d2, xCrit);
+
+        texto =
+            `1ª Derivada: ${d1}
+            2ª Derivada: ${d2}
+
+            Ponto crítico encontrado:
+            x = ${xCrit.toFixed(4)}
+            y = ${yCrit.toFixed(4)}
+            Tipo: ${tipo}`;
+    }
+
+} else if (operacao === "trapz") {
+
+   
+    //  INTEGRAL NUMÉRICA
+    
+
+    let minInput = parseFloat(document.getElementById("minIntervalo").value);
+    let maxInput = parseFloat(document.getElementById("maxIntervalo").value);
+
+    let min = !isNaN(minInput) ? minInput : -100;
+    let max = !isNaN(maxInput) ? maxInput : 100;
+
+
+    if (isNaN(min) || isNaN(max) || min >= max) {
+        document.getElementById("resultado").innerText =
+            "Erro: intervalo inválido.";
+        return;
+    }
+
+    let area = trapezios(funcao, min, max, 4000); // 4k trapézios = suave
+
+    texto =
+        `Integral numérica (Regra dos Trapézios)
+        Função: ${funcao}
+        Intervalo: [${min}, ${max}]
+        Área aproximada = ${area}`;
+
+} else {
+
+    
+    //  INTEGRAL SIMBÓLICA
+    
+
+    let integral = exibirIntegral(calcularIntegral(termos));
+    texto = `Integral indefinida:\n${integral}`;
+}
+
 
     document.getElementById("resultado").innerText = texto;
 });

@@ -1,3 +1,9 @@
+/*
+### **Grupo 2 — 
+## Integrantes: Bruno Enrique Medeiros Costa, Ezequiel da Silva, Miguel Rocha de Araujo, Rogério, Samuel de Macedo Ferrari**
+
+*/
+
 let prompt = require("prompt-sync")();
 
 //Funções derivadas
