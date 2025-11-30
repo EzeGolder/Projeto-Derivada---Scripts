@@ -1,27 +1,49 @@
 /*
-### **Grupo 2 — 
-## Integrantes: Bruno Enrique Medeiros Costa, Ezequiel da Silva, Miguel Rocha de Araujo, Rogério, Samuel de Macedo Ferrari**
+### GRUPO 2 — PROJETO DE CALCULADORA DERIVADAS/INTEGRAIS (Web)
+Integrantes:
+- Bruno Enrique Medeiros Costa
+- Ezequiel da Silva
+- Miguel Rocha de Araujo
+- Rogério
+- Samuel de Macedo Ferrari
 
+Este arquivo contém **TODO o JavaScript responsável pela interface funcional da calculadora Web**.
+Ele faz:
+manipulação da página (DOM)
+interpretação de funções matemáticas dadas pelo usuário
+cálculo de derivadas
+cálculo de integrais simbólicas
+cálculo de integrais numéricas (regra dos trapézios)
+identificação de pontos críticos (máx/min)
+
+Cada bloco é explicado abaixo.
 */
-//Javascript para a manipulação da página web da calculadora
 
-//Adição de referências a elementos da página:
 
-// Mostrar campos apenas quando o usuário quiser intervalo personalizado
+/* =
+    CONTROLE DA INTERFACE (DOM)
+  
+   Esta parte serve apenas para controlar quais campos aparecem
+   na tela. Não envolve matemática — apenas UX.
+*/
+
+// Exibe ou oculta inputs de intervalo quando o usuário mudar o modo
 document.querySelectorAll("input[name='intervaloModo']").forEach(radio => {
     radio.addEventListener("change", () => {
-        let custom = document.querySelector("input[name='intervaloModo']:checked").value;
+        let modo = document.querySelector("input[name='intervaloModo']:checked").value;
+
+        // Só mostra inputs se o usuário deseja intervalo customizado
         document.getElementById("intervalos").style.display =
-            custom === "custom" ? "flex" : "none";
+            (modo === "custom") ? "flex" : "none";
     });
 });
 
-// Controlar visibilidade dos radios de intervalo com base na operação escolhida
+// Mostra ou esconde os campos de intervalo dependendo da operação
 function atualizarVisibilidadeIntervalo() {
     let operacao = document.querySelector("input[name='operacao']:checked").value;
 
     if (operacao === "derivada" || operacao === "trapz") {
-        // Derivada e integral numérica precisam de intervalos
+        // Derivada e integral numérica PRECISAM de intervalo
         document.getElementById("intervalo-opcao").style.display = "flex";
 
         let modo = document.querySelector("input[name='intervaloModo']:checked").value;
@@ -29,28 +51,42 @@ function atualizarVisibilidadeIntervalo() {
             modo === "custom" ? "flex" : "none";
 
     } else {
-        // Integral simbólica não usa intervalo
+        // Integral simbólica não usa intervalos
         document.getElementById("intervalo-opcao").style.display = "none";
         document.getElementById("intervalos").style.display = "none";
     }
 }
 
-
+// Atualiza sempre que o usuário trocar opção
 document.querySelectorAll("input[name='operacao']").forEach(radio => {
     radio.addEventListener("change", atualizarVisibilidadeIntervalo);
 });
-
 document.querySelectorAll("input[name='intervaloModo']").forEach(radio => {
     radio.addEventListener("change", atualizarVisibilidadeIntervalo);
 });
 
+// Chamada inicial
 atualizarVisibilidadeIntervalo();
 
-//Funções da calculadora:
 
 
-//Transformar fração em número único
+/* 
+    INTERPRETAÇÃO DE FUNÇÕES
+  
+   As próximas funções transformam strings como:
+       "3x^2 - 4x + 1/2"
+   em uma estrutura fácil de manipular:
 
+   [
+     { coeficiente: 3 , expoente: 2 },
+     { coeficiente: -4, expoente: 1 },
+     { coeficiente: 0.5, expoente: 0 }
+   ]
+
+   Isso é essencial para derivar, integrar ou avaliar.
+*/
+
+// Converte frações escritas como "1/3" para números reais
 function parseFracao(fraction) {
     if (fraction.includes('/')) {
         const [n, d] = fraction.split('/').map(Number);
@@ -59,86 +95,82 @@ function parseFracao(fraction) {
     return parseFloat(fraction);
 }
 
-//Método que trata as funções, devolvendo um vetor de monômios
+
+// Converte string → array de monômios
 function Funcoes(funcao) {
+    funcao = funcao.toLowerCase().replace(/\s+/g, '');
 
-    // Normalização
-    funcao = funcao.toLowerCase();
-    funcao = funcao.replace(/\s+/g, '');
-
+    // Garante que toda função começa com sinal
     if (funcao[0] !== '+' && funcao[0] !== '-')
         funcao = '+' + funcao;
 
     let termos = [];
-    let termoAtual = '';
-    let coeficiente = 0;
-    let expoente = 0;
+    let termoAtual = "";
 
     for (let i = 0; i < funcao.length; i++) {
-        const c = funcao[i];
+        let c = funcao[i];
 
+        // Termos contendo "x"
         if (c === 'x') {
+            let coef;
 
-            if (termoAtual === '' || termoAtual === '+' || termoAtual === '-') {
-                coeficiente = termoAtual === '-' ? -1 : 1;
-            } else {
-                coeficiente = parseFracao(termoAtual);
-            }
+            // Casos como "+x" ou "-x"
+            if (termoAtual === '' || termoAtual === '+' || termoAtual === '-')
+                coef = termoAtual === '-' ? -1 : 1;
+            else
+                coef = parseFracao(termoAtual);
 
+            // Expoente
+            let expo = 1;
             if (funcao[i + 1] === '^') {
-                let inicio = i + 2;
-                let fim = inicio;
-
-                while (fim < funcao.length && (!isNaN(funcao[fim]))) {
-                    fim++;
-                }
-
-                expoente = parseInt(funcao.slice(inicio, fim));
-                i = fim - 1;
-            } else {
-                expoente = 1;
+                let j = i + 2;
+                while (!isNaN(funcao[j])) j++;
+                expo = parseInt(funcao.slice(i + 2, j));
+                i = j - 1;
             }
 
-            termos.push({ coeficiente, expoente });
-            termoAtual = '';
+            termos.push({ coeficiente: coef, expoente: expo });
+            termoAtual = "";
         }
 
+        // Novo termo (+ ou -)
         else if (c === '+' || c === '-') {
-            if (termoAtual !== '') {
-                coeficiente = parseFracao(termoAtual);
-                expoente = 0;
-                termos.push({ coeficiente, expoente });
-            }
+            if (termoAtual !== "")
+                termos.push({ coeficiente: parseFracao(termoAtual), expoente: 0 });
+
             termoAtual = c;
         }
 
-        else {
-            if (!isNaN(c) || c === '.' || c === '/')
-                termoAtual += c;
-        }
+        // Números / frações
+        else if (!isNaN(c) || c === '.' || c === '/')
+            termoAtual += c;
     }
 
-    if (termoAtual !== '') {
-        coeficiente = parseFracao(termoAtual);
-        expoente = 0;
-        termos.push({ coeficiente, expoente });
-    }
+    // Último termo
+    if (termoAtual !== "")
+        termos.push({ coeficiente: parseFracao(termoAtual), expoente: 0 });
 
     return termos;
 }
 
 
-//Derivadas
 
+/*
+    DERIVADAS
+   */
+
+// Derivada de um monômio c·x^e → (c·e)·x^(e-1)
 function derivadaTombo(c, e) {
     if (e === 0) return [0, 0];
     return [c * e, e - 1];
 }
 
+// Deriva todos os monômios da função
 function calcularDerivada(funcoes) {
     return funcoes.map(t => derivadaTombo(t.coeficiente, t.expoente));
 }
 
+// Converte monômios → string novamente
 function exibirResultado(derivadaFuncoes) {
     let r = "";
     let primeira = true;
@@ -159,94 +191,99 @@ function exibirResultado(derivadaFuncoes) {
 }
 
 
-//Ponto Crítico
 
+/* 
+    AVALIAÇÃO DE FUNÇÃO f(x)
+    */
+
+// Calcula o valor da função para um x específico (usado em trapézios e ponto crítico)
 function calcularX(funcao, x) {
     let termos = Funcoes(funcao);
-    let r = 0;
-    for (let t of termos) r += t.coeficiente * Math.pow(x, t.expoente);
-    return r;
+    return termos.reduce((s, t) => s + t.coeficiente * Math.pow(x, t.expoente), 0);
 }
+
+
+
+/* 
+    PONTO CRÍTICO (Máximos / Mínimos)
+   
+   A técnica funciona assim:
+
+   1. Escaneia o intervalo todo em busca de mudança de sinal na derivada
+   2. Quando acha possível ponto crítico → refina com método da bisseção
+   3. Volta x onde f'(x) = 0
+*/
 
 function pontoCritico(derivadaStr, min = -100, max = 100) {
-
-    // 1. Amostragem inicial - detectar possíveis mudanças de sinal
-    let passos = 2000; // QUanto mais denso mais preciso
+    let passos = 2000;
     let delta = (max - min) / passos;
 
-    let anterior = calcularX(derivadaStr, min);
     let candidatos = [];
+    let anterior = calcularX(derivadaStr, min);
 
+    // Procura onde f' muda de sinal
     for (let i = 1; i <= passos; i++) {
-        let xAtual = min + i * delta;
-        let valor = calcularX(derivadaStr, xAtual);
+        let x = min + i * delta;
+        let atual = calcularX(derivadaStr, x);
 
-        // Detectar mudança de sinal (método original)
-        if (anterior * valor < 0) {
-            candidatos.push([xAtual - delta, xAtual]);
-        }
+        if (anterior * atual < 0)
+            candidatos.push([x - delta, x]);
 
-        // Detectar valores muito próximos de zero (pontos de sela)
-        if (Math.abs(valor) < 0.0005) {
-            candidatos.push([xAtual - delta, xAtual + delta]);
-        }
+        if (Math.abs(atual) < 0.0005)
+            candidatos.push([x - delta, x + delta]);
 
-        anterior = valor;
+        anterior = atual;
     }
 
-    // Se não achou nada, não há ponto crítico
     if (candidatos.length === 0) return null;
 
-    // 2. Para cada janela encontrada, aplicar método binário
-    let limite = 0.0001;
-
+    // Refinamento por bisecção
     for (let [a, b] of candidatos) {
-        let min2 = a;
-        let max2 = b;
+        let left = a, right = b;
+        for (let k = 0; k < 200; k++) {
+            let m = (left + right) / 2;
+            let fm = calcularX(derivadaStr, m);
 
-        let it = 0;
-        let x = (min2 + max2) / 2;
-        let fx = calcularX(derivadaStr, x);
+            if (Math.abs(fm) < 0.0001)
+                return m;
 
-        while (Math.abs(fx) > limite && it < 10000) {
-            
-            if (fx > 0) max2 = x;
-            else min2 = x;
+            let fl = calcularX(derivadaStr, left);
 
-            x = (min2 + max2) / 2;
-            fx = calcularX(derivadaStr, x);
-            it++;
-        }
-
-        if (it < 10000) {
-            return x; // Encontrou!
+            if (fl * fm < 0) right = m;
+            else left = m;
         }
     }
 
-    return null; // Se todos os intervalos falharam
+    return null;
 }
 
-
+// Determina se é mínimo ou máximo via derivada segunda
 function minOuMax(derivada2, x) {
-    let y = calcularX(derivada2, x);
-    if (y < 0) return "Máximo";
-    if (y > 0) return "Mínimo";
-    return "Ponto nulo";
+    let d2 = calcularX(derivada2, x);
+    if (d2 < 0) return "Máximo";
+    if (d2 > 0) return "Mínimo";
+    return "Ponto nulo / inflexão";
 }
 
 
-//Integrais
 
+/* 
+    INTEGRAIS SIMBÓLICAS
+   */
+
+// Integral de c·x^e → (c/(e+1))·x^(e+1)
 function integralSubida(c, e) {
     return [c / (e + 1), e + 1];
 }
 
+// Integra cada termo individualmente
 function calcularIntegral(funcoes) {
     return funcoes.map(t =>
         t.expoente === 0 ? [t.coeficiente, 1] : integralSubida(t.coeficiente, t.expoente)
     );
 }
 
+// Converte monômios → string final com “+ C”
 function exibirIntegral(intFuncoes) {
     let r = "";
     let primeira = true;
@@ -266,139 +303,148 @@ function exibirIntegral(intFuncoes) {
 }
 
 
-//     Regra dos Trapézios (Integração Numérica)
 
+/* 
+    INTEGRAL NUMÉRICA — REGRA DOS TRAPÉZIOS
+   
+   Fórmula:
 
-// Integra a função no intervalo [a, b] usando n trapézios
+     ∫ f(x) dx ≈ h/2 * [ f(a) + 2( f(a+h) + ... + f(b−h) ) + f(b) ]
+
+   Quanto mais trapézios (n), mais preciso o resultado.
+*/
+
 function trapezios(funcaoStr, a, b, n = 2000) {
 
-    // Garantir valores válidos
     a = parseFloat(a);
     b = parseFloat(b);
     n = parseInt(n);
 
-    if (isNaN(a) || isNaN(b) || isNaN(n) || n <= 0) {
+    if (isNaN(a) || isNaN(b) || isNaN(n) || n <= 0)
         return "Erro: valores inválidos para a integral numérica.";
-    }
 
-    // Largura dos trapézios
     let h = (b - a) / n;
     let soma = 0;
 
-    // Soma das partes internas (todas menos as bordas)
     for (let i = 1; i < n; i++) {
         let x = a + i * h;
         soma += calcularX(funcaoStr, x);
     }
 
-    // Fórmula final dos trapézios
-    let resultado = (h / 2) * (
+    return (h / 2) * (
         calcularX(funcaoStr, a) +
         2 * soma +
         calcularX(funcaoStr, b)
     );
-
-    return resultado;
 }
 
 
 
-//Funções do botão de enviar 
+/* 
+    BOTÃO "CALCULAR" — LÓGICA PRINCIPAL
+   
+*/
 
 document.getElementById("calcular").addEventListener("click", () => {
+
     let funcao = document.getElementById("funcao").value;
     let operacao = document.querySelector("input[name='operacao']:checked").value;
 
     let termos = Funcoes(funcao);
     let texto = "";
 
+
+
+    /* 
+        DERIVADAS
+    */
     if (operacao === "derivada") {
 
-    
-    //  DERIVADAS
-    
+        let d1 = exibirResultado(calcularDerivada(termos));
+        let d1limpo = d1.replace(/\s+/g, '');
+        let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
 
-    let d1 = exibirResultado(calcularDerivada(termos));
-    let d1limpo = d1.replace(/\s+/g, '');
-    let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
+        // Escolha do intervalo
+        let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
+        let min, max;
 
-    // Intervalo
-    let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
-    let min, max;
+        if (intervaloModo === "custom") {
+            min = parseFloat(document.getElementById("minIntervalo").value);
+            max = parseFloat(document.getElementById("maxIntervalo").value);
 
-    if (intervaloModo === "custom") {
-        min = parseFloat(document.getElementById("minIntervalo").value);
-        max = parseFloat(document.getElementById("maxIntervalo").value);
+            if (isNaN(min) || isNaN(max) || min >= max) {
+                document.getElementById("resultado").innerText =
+                    "Erro: intervalo inválido.";
+                return;
+            }
+        } else {
+            min = -100;
+            max = 100;
+        }
+
+        let xCrit = pontoCritico(d1limpo, min, max);
+
+        if (xCrit === null) {
+            texto =
+                `1ª Derivada: ${d1}
+                2ª Derivada: ${d2}
+
+                Não há ponto crítico no intervalo (${min}, ${max}).`;
+        } else {
+            let yCrit = calcularX(funcao, xCrit);
+            let tipo = minOuMax(d2, xCrit);
+
+            texto =
+                `1ª Derivada: ${d1}
+                2ª Derivada: ${d2}
+
+                Ponto crítico encontrado:
+                x = ${xCrit.toFixed(4)}
+                y = ${yCrit.toFixed(4)}
+                Tipo: ${tipo}`;
+        }
+    }
+
+
+
+    /* 
+        INTEGRAL NUMÉRICA
+    */
+    else if (operacao === "trapz") {
+
+        let minInput = parseFloat(document.getElementById("minIntervalo").value);
+        let maxInput = parseFloat(document.getElementById("maxIntervalo").value);
+
+        let min = !isNaN(minInput) ? minInput : -100;
+        let max = !isNaN(maxInput) ? maxInput : 100;
 
         if (isNaN(min) || isNaN(max) || min >= max) {
             document.getElementById("resultado").innerText =
                 "Erro: intervalo inválido.";
             return;
         }
-    } else {
-        min = -100;
-        max = 100;
-    }
 
-    let xCrit = pontoCritico(d1limpo, min, max);
-
-    if (xCrit === null) {
-        texto =
-            `1ª Derivada: ${d1}
-            2ª Derivada: ${d2}
-
-            Não há ponto crítico no intervalo (${min}, ${max}).`;
-    } else {
-        let yCrit = calcularX(funcao, xCrit);
-        let tipo = minOuMax(d2, xCrit);
+        let area = trapezios(funcao, min, max, 4000);
 
         texto =
-            `1ª Derivada: ${d1}
-            2ª Derivada: ${d2}
-
-            Ponto crítico encontrado:
-            x = ${xCrit.toFixed(4)}
-            y = ${yCrit.toFixed(4)}
-            Tipo: ${tipo}`;
+            `Integral numérica (Regra dos Trapézios)
+            Função: ${funcao}
+            Intervalo: [${min}, ${max}]
+            Área aproximada = ${area}`;
     }
 
-} else if (operacao === "trapz") {
-
-   
-    //  INTEGRAL NUMÉRICA
-    
-
-    let minInput = parseFloat(document.getElementById("minIntervalo").value);
-    let maxInput = parseFloat(document.getElementById("maxIntervalo").value);
-
-    let min = !isNaN(minInput) ? minInput : -100;
-    let max = !isNaN(maxInput) ? maxInput : 100;
 
 
-    if (isNaN(min) || isNaN(max) || min >= max) {
-        document.getElementById("resultado").innerText =
-            "Erro: intervalo inválido.";
-        return;
+    /*
+        INTEGRAL SIMBÓLICA
+    */
+    else {
+        let integral = exibirIntegral(calcularIntegral(termos));
+        texto = `Integral indefinida:\n${integral}`;
     }
 
-    let area = trapezios(funcao, min, max, 4000); // 4k trapézios = suave
-
-    texto =
-        `Integral numérica (Regra dos Trapézios)
-        Função: ${funcao}
-        Intervalo: [${min}, ${max}]
-        Área aproximada = ${area}`;
-
-} else {
-
-    
-    //  INTEGRAL SIMBÓLICA
-    
-
-    let integral = exibirIntegral(calcularIntegral(termos));
-    texto = `Integral indefinida:\n${integral}`;
-}
 
 
+    // Exibir no HTML
     document.getElementById("resultado").innerText = texto;
 });
