@@ -1,380 +1,251 @@
-/*
-### **Grupo 2 — 
-## Integrantes: Bruno Enrique Medeiros Costa, Ezequiel da Silva, Miguel Rocha de Araujo, Rogério, Samuel de Macedo Ferrari**
 
-*/
+//  CALCULADORA DE DERIVADAS E INTEGRAIS - CONSOLE
+//  Node.js — Grupo 2
 
-let prompt = require("prompt-sync")();
 
-//Funções derivadas
-let primeira_derivada;
-let segunda_derivada;
+const prompt = require("prompt-sync")({ sigint: true });
 
-//Função que vai converter fração para número com virgula
-function parseFracao(fraction) {
-    if (fraction.includes('/')) {
-        const [numerador, denominador] = fraction.split('/').map(Number);
-        return numerador / denominador;
+
+// Funções matemáticas básicas
+
+
+// Converte frações (ex.: "1/3") para número
+function parseFracao(f) {
+    if (f.includes("/")) {
+        const [n, d] = f.split("/").map(Number);
+        return n / d;
     }
-    return parseFloat(fraction);
+    return parseFloat(f);
 }
 
-//Transforma funções em forma de strings em um array de coeficientes e expoentes
+// Decompõe função em monômios: retorna [{coeficiente, expoente}]
 function Funcoes(funcao) {
+    funcao = funcao.toLowerCase().replace(/\s+/g, "");
+
+    if (funcao[0] !== "+" && funcao[0] !== "-") funcao = "+" + funcao;
+
     let termos = [];
-    let termoAtual = '';
-    let coeficiente = 0;
-    let expoente = 0;
-
-    funcao = funcao.replace(/\s+/g, '');
-    funcao = funcao.replace(/,/g, '.');
-
-    if (funcao[0] != '-' && funcao[0] != '+') {
-        funcao = '+' + funcao;
-    }
+    let termoAtual = "";
 
     for (let i = 0; i < funcao.length; i++) {
-        const caractere = funcao[i];
+        let c = funcao[i];
 
-        if (caractere == 'x') {
-            if (termoAtual == '' || termoAtual == '+' || termoAtual == '-') {
-                coeficiente = termoAtual == '-' ? -1 : 1;
-            } else {
-                coeficiente = parseFracao(termoAtual);
+        if (c === "x") {
+            let coef;
+
+            if (termoAtual === "" || termoAtual === "+" || termoAtual === "-")
+                coef = termoAtual === "-" ? -1 : 1;
+            else
+                coef = parseFracao(termoAtual);
+
+            let expo = 1;
+
+            if (funcao[i + 1] === "^") {
+                let j = i + 2;
+                while (!isNaN(funcao[j])) j++;
+                expo = parseInt(funcao.slice(i + 2, j));
+                i = j - 1;
             }
 
-            if (funcao[i + 1] == '^') {
-                let inicioExpoente = i + 2;
-                let fimExpoente = inicioExpoente;
-
-                while (fimExpoente < funcao.length && !isNaN(funcao[fimExpoente])) {
-                    fimExpoente++;
-                }
-
-                expoente = parseInt(funcao.slice(inicioExpoente, fimExpoente));
-                i = fimExpoente - 1;
-            } else {
-                expoente = 1;
+            termos.push({ coeficiente: coef, expoente: expo });
+            termoAtual = "";
+        }
+        else if (c === "+" || c === "-") {
+            if (termoAtual !== "") {
+                termos.push({ coeficiente: parseFracao(termoAtual), expoente: 0 });
             }
-
-            termos.push({ coeficiente, expoente });
-            termoAtual = '';
-        } else if (caractere == '+' || caractere == '-') {
-            if (termoAtual != '') {
-                coeficiente = parseFracao(termoAtual);
-                expoente = 0;
-                termos.push({ coeficiente, expoente });
-            }
-            termoAtual = caractere;
-        } else {
-            termoAtual += caractere;
+            termoAtual = c;
+        }
+        else {
+            termoAtual += c;
         }
     }
-    if (termoAtual != '') {
-        coeficiente = parseFracao(termoAtual);
-        expoente = 0;
-        termos.push({ coeficiente, expoente });
+
+    if (termoAtual !== "") {
+        termos.push({ coeficiente: parseFracao(termoAtual), expoente: 0 });
     }
 
     return termos;
 }
 
-function derivadaTombo(coeficiente, expoente) {
-    if (expoente == 0) {
-        return [0, 0];
-    }
 
-    let novoCoeficiente = coeficiente * expoente;
-    let novoExpoente = expoente - 1;
+// Derivadas
 
-    return [novoCoeficiente, novoExpoente];
+
+function derivadaTombo(c, e) {
+    if (e === 0) return [0, 0];
+    return [c * e, e - 1];
 }
 
-function calcularDerivada(funcoes) {
-    let derivadaFuncoes = [];
-
-    for (let i = 0; i < funcoes.length; i++) {
-        let { coeficiente, expoente } = funcoes[i];
-        let derivadaTermo = derivadaTombo(coeficiente, expoente);
-        derivadaFuncoes.push(derivadaTermo);
-    }
-
-    return derivadaFuncoes;
+function calcularDerivada(termos) {
+    return termos.map(t => derivadaTombo(t.coeficiente, t.expoente));
 }
 
-//Retorno de uma função (derivada) em forma de string
-function exibirResultado(derivadaFuncoes) {
-    let resultado = "";
-    let primeira = true;
+function exibirResultado(derivada) {
+    let r = "";
+    for (let [c, e] of derivada) {
+        if (c !== 0) {
+            let s = c > 0 && r !== "" ? "+" : "";
+            let k = Math.abs(c).toFixed(2);
 
-    for (let i = 0; i < derivadaFuncoes.length; i++) {
-        let [coeficiente, expoente] = derivadaFuncoes[i];
-
-        if (coeficiente != 0) {
-            let sinal = coeficiente > 0 ? (primeira ? '' : ' + ') : ' - ';
-            let valorAbsoluto = Math.abs(coeficiente);
-
-
-            //isso aqui é pra arredondar, não é a melhor coisa do mundo, mas achei necessário
-            valorAbsoluto = parseFloat(valorAbsoluto.toFixed(2));
-            
-            if (expoente == 0)
-                resultado += `${sinal}${valorAbsoluto}`;
-            else if (expoente == 1)
-                resultado += `${sinal}${valorAbsoluto}x`;
-            else
-                resultado += `${sinal}${valorAbsoluto}x^${expoente}`;
-
-            primeira = false;
+            if (e === 0) r += `${s}${k}`;
+            else if (e === 1) r += `${s}${k}x`;
+            else r += `${s}${k}x^${e}`;
         }
     }
-
-
-    if (resultado == "") {
-        resultado += "0";
-    }
-    
-    console.log(resultado);
-
-    return resultado;
-}
-
-//Função que controla as saídas das derivadas
-function inserir_exibir(funcao, grau){
-    let funcoes = Funcoes(funcao);
-
-    let derivadaFuncoes = calcularDerivada(funcoes);
-
-    console.log(`Derivada de ${grau} grau`)
-
-    return exibirResultado(derivadaFuncoes);
-
-}
-
-//Calcular o Y de uma função com base no X
-function calcularX(Derivada, x){
-    let resultado = 0;
-
-    let  termoDerivada = Funcoes(Derivada);
-
-    for(let i = 0; i < termoDerivada.length; i++){
-        let {coeficiente, expoente} = termoDerivada[i];
-        //console.log(termoDerivada[i]);
-        resultado += coeficiente * Math.pow(x, expoente);
-    }
-
-    //console.log(resultado)
-    return resultado;
+    return r || "0";
 }
 
 
-//Descobrir ponto crítico
-function pontoCritico(Derivada, minIntervalo = -100, maxIntervalo = 100) {
+// Avaliação de função
 
-    console.log(`\nIntervalo escolhido para análise: [${minIntervalo}, ${maxIntervalo}]`);
 
-    let termosDerivada = Funcoes(Derivada);
-    if (termosDerivada.length === 1 && termosDerivada[0].expoente === 0) {
-        return null;
+function calcularX(funcaoStr, x) {
+    let termos = Funcoes(funcaoStr);
+    return termos.reduce((acc, t) => acc + t.coeficiente * Math.pow(x, t.expoente), 0);
+}
+
+
+// Pontos críticos (scan + bisseção)
+
+
+function pontoCritico(derivadaStr, min = -100, max = 100) {
+    let passos = 2000;
+    let delta = (max - min) / passos;
+    let anterior = calcularX(derivadaStr, min);
+    let candidatos = [];
+
+    for (let i = 1; i <= passos; i++) {
+        let x = min + i * delta;
+        let atual = calcularX(derivadaStr, x);
+
+        if (anterior * atual < 0) {
+            candidatos.push([x - delta, x]);
+        }
+
+        if (Math.abs(atual) < 0.0005) {
+            candidatos.push([x - delta, x + delta]);
+        }
+
+        anterior = atual;
     }
 
-    let maxIteracoes = 10000;
     let limite = 0.0001;
-    let iteracao = 0;
-    let valorX = (maxIntervalo + minIntervalo) / 2;
 
-    let fmin = calcularX(Derivada, minIntervalo);
-    let fmax = calcularX(Derivada, maxIntervalo);
+    for (let [a, b] of candidatos) {
+        let fa, fb;
+        for (let i = 0; i < 200; i++) {
+            let m = (a + b) / 2;
+            let fm = calcularX(derivadaStr, m);
 
-    if (fmin * fmax > 0) {
-        console.log("A derivada não cruza o eixo x neste intervalo. Tente outro intervalo.");
-        return null;
-    }
+            if (Math.abs(fm) < limite) return m;
 
-    let valorDerivada = calcularX(Derivada, valorX);
+            fa = calcularX(derivadaStr, a);
 
-    while (Math.abs(valorDerivada) > limite && iteracao < maxIteracoes) {
-
-        if (valorDerivada > 0) {
-            maxIntervalo = valorX;
-        } else {
-            minIntervalo = valorX;
-        }
-
-        valorX = (maxIntervalo + minIntervalo) / 2;
-        valorDerivada = calcularX(Derivada, valorX);
-        iteracao++;
-    }
-
-    if (iteracao >= maxIteracoes) {
-        console.log("Limite de iterações alcançado.");
-        return null;
-    }
-
-    return valorX;
-}
-
-
-function minOuMax(derivada2, x){
-    if(derivada2 == ""){
-        return "Não existe ponto crítico"
-    }
-
-    y = calcularX(derivada2, x)
-    if(y < 0){
-        return "Máximo"
-    }else if(y>0){
-        return "Mínimo"
-    }else{
-        return "Nulo"
-    }
-}
-
-
-
-//      FUNÇÕES DE INTEGRAIS
-
-
-// Integra o termo oposto ao tombo
-function integralSubida(coeficiente, expoente) {
-    let novoExpoente = expoente + 1;
-
-    // coeficiente / novoExpoente
-    let novoCoeficiente = coeficiente / novoExpoente;
-
-    return [novoCoeficiente, novoExpoente];
-}
-
-// Calcula integral de todos os termos
-function calcularIntegral(funcoes) {
-    let integralFuncoes = [];
-
-    for (let i = 0; i < funcoes.length; i++) {
-        let { coeficiente, expoente } = funcoes[i];
-
-        // constante vira coef * x
-        if (expoente === 0) {
-            integralFuncoes.push([coeficiente, 1]);
-        } else {
-            integralFuncoes.push(integralSubida(coeficiente, expoente));
+            if (fa * fm < 0) b = m;
+            else a = m;
         }
     }
 
-    return integralFuncoes;
+    return null;
 }
 
-// Exibir integral em formato de string (+ C)
-function exibirIntegral(integralFuncoes) {
-    let resultado = "";
-    let primeira = true;
+function minOuMax(derivada2Str, x) {
+    let d2 = calcularX(derivada2Str, x);
+    if (d2 < 0) return "Máximo";
+    if (d2 > 0) return "Mínimo";
+    return "Ponto de inflexão / nulo";
+}
 
-    for (let i = 0; i < integralFuncoes.length; i++) {
-        let [coeficiente, expoente] = integralFuncoes[i];
 
-        if (coeficiente != 0) {
-            let sinal = coeficiente > 0 ? (primeira ? '' : ' + ') : ' - ';
-            let valorAbsoluto = Math.abs(coeficiente);
+// Integração simbólica
 
-            valorAbsoluto = parseFloat(valorAbsoluto.toFixed(2));
 
-            if (expoente == 0)
-                resultado += `${sinal}${valorAbsoluto}`;
-            else if (expoente == 1)
-                resultado += `${sinal}${valorAbsoluto}x`;
-            else
-                resultado += `${sinal}${valorAbsoluto}x^${expoente}`;
+function integralSubida(c, e) {
+    return [c / (e + 1), e + 1];
+}
 
-            primeira = false;
-        }
+function calcularIntegral(termos) {
+    return termos.map(t => {
+        if (t.expoente === 0) return [t.coeficiente, 1];
+        return integralSubida(t.coeficiente, t.expoente);
+    });
+}
+
+function exibirIntegral(intFun) {
+    let r = "";
+    for (let [c, e] of intFun) {
+        let s = c > 0 && r !== "" ? "+" : "";
+        let k = Math.abs(c).toFixed(2);
+        if (e === 1) r += `${s}${k}x`;
+        else r += `${s}${k}x^${e}`;
+    }
+    return r + "+C";
+}
+
+
+// Regra dos Trapézios
+
+
+function trapezios(funcaoStr, a, b, n = 2000) {
+    let h = (b - a) / n;
+    let soma = 0;
+
+    for (let i = 1; i < n; i++) {
+        soma += calcularX(funcaoStr, a + i * h);
     }
 
-    if (resultado == "") {
-        resultado = "0";
-    }
-
-    resultado += " + C";
-
-    console.log(resultado);
-    return resultado;
-}
-
-// Controlador da integral
-function inserir_integral(funcao) {
-    let funcoes = Funcoes(funcao);
-    let integralFuncoes = calcularIntegral(funcoes);
-
-    console.log("\nIntegral indefinida:");
-    return exibirIntegral(integralFuncoes);
+    return (h / 2) * (calcularX(funcaoStr, a) + 2 * soma + calcularX(funcaoStr, b));
 }
 
 
-//Execução do programa
-
-console.log("===== MENU =====");
-console.log("1 - Calcular derivadas");
-console.log("2 - Calcular integrais");
-console.log("================");
+// Interface Console
 
 
-//Inserção de escolha
-let escolha = prompt("Escolha uma opção: ");
+console.log("=== CALCULADORA DE DERIVADAS E INTEGRAIS (Console) ===");
 
-if (escolha == "1") {
+let funcao = prompt("Digite a função f(x): ");
+console.log("\nEscolha a operação:");
+console.log("1 - Primeira e segunda derivada + ponto crítico");
+console.log("2 - Integral indefinida");
+console.log("3 - Integral numérica (regra dos trapézios)");
 
-    //Inserção de função base
-    let funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
+let op = prompt("Opção: ");
 
-    console.log("\nFunção original:", funcao);
+if (op === "1") {
+    let termos = Funcoes(funcao);
+    let d1 = exibirResultado(calcularDerivada(termos));
+    let d1limpo = d1.replace(/\s+/g, '');
+    let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
 
-    // 1ª derivada
-    primeira_derivada = inserir_exibir(funcao, "primeiro");
+    console.log("\n1ª Derivada:", d1);
+    console.log("2ª Derivada:", d2);
 
-    // 2ª derivada
-    segunda_derivada = inserir_exibir(primeira_derivada, "segundo");
+    let xc = pontoCritico(d1limpo, -100, 100);
 
-    // Escolha do intervalo
-    console.log("\nDeseja inserir um intervalo personalizado para o cálculo do ponto crítico?");
-    console.log("1 - Sim");
-    console.log("2 - Não (usar intervalo padrão [-100, 100])");
-
-    let escolhaIntervalo = prompt("Escolha: ");
-
-    let minIntervalo, maxIntervalo;
-
-    if (escolhaIntervalo == "1") {
-        minIntervalo = parseFloat(prompt("Digite o limite inferior do intervalo: "));
-        maxIntervalo = parseFloat(prompt("Digite o limite superior do intervalo: "));
-        console.log(`\nIntervalo definido pelo usuário: [${minIntervalo}, ${maxIntervalo}]`);
+    if (xc === null) {
+        console.log("Nenhum ponto crítico encontrado.");
     } else {
-        minIntervalo = -100;
-        maxIntervalo = 100;
-        console.log("\nIntervalo padrão utilizado: [-100, 100]");
+        let yc = calcularX(funcao, xc);
+        console.log(`\nPonto crítico encontrado: x = ${xc.toFixed(4)}, y = ${yc.toFixed(4)}`);
+        console.log("Tipo:", minOuMax(d2, xc));
     }
-
-    // Cálculo do ponto crítico
-    let xZero = pontoCritico(primeira_derivada, minIntervalo, maxIntervalo);
-
-    if (xZero == null) {
-        console.log("Ponto crítico inexistente ou fora do intervalo.");
-    } else {
-        let yZero = calcularX(funcao, xZero);
-        let tipo_ponto = minOuMax(segunda_derivada, xZero);
-
-        console.log(`Ponto ${tipo_ponto}: (${xZero.toFixed(4)}, ${yZero.toFixed(4)})`);
-    }
-
 }
- else if (escolha == "2") {
 
-    // INTEGRAIS 
+else if (op === "2") {
+    let termos = Funcoes(funcao);
+    console.log("\nIntegral:", exibirIntegral(calcularIntegral(termos)));
+}
 
-    //Inserção de função base
-    let funcao = prompt("Digite a função para integrar (ex: 3x^2 - 2x + 1): ");
+else if (op === "3") {
+    let a = parseFloat(prompt("Intervalo mínimo: "));
+    let b = parseFloat(prompt("Intervalo máximo: "));
 
-    console.log("\nFunção original:", funcao);
+    let area = trapezios(funcao, a, b, 4000);
 
-    inserir_integral(funcao);
+    console.log(`\nIntegral numérica ≈ ${area}`);
+}
 
-} else {
+else {
     console.log("Opção inválida.");
 }
