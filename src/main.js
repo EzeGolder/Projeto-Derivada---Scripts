@@ -1,4 +1,6 @@
 let prompt = require("prompt-sync")();
+
+//Funções derivadas
 let primeira_derivada;
 let segunda_derivada;
 
@@ -160,53 +162,52 @@ function calcularX(Derivada, x){
 }
 
 
-//Descobrir ponto físico
-function pontoCritico(Derivada){
-    termosDerivada = Funcoes(Derivada)
-    if(termosDerivada.length == 1 && termosDerivada[0].expoente == 0){
-        return null
+//Descobrir ponto crítico
+function pontoCritico(Derivada, minIntervalo = -100, maxIntervalo = 100) {
+
+    console.log(`\nIntervalo escolhido para análise: [${minIntervalo}, ${maxIntervalo}]`);
+
+    let termosDerivada = Funcoes(Derivada);
+    if (termosDerivada.length === 1 && termosDerivada[0].expoente === 0) {
+        return null;
     }
 
-
-    let maxIntervalo = 100;
-    let minIntervalo = -100;
     let maxIteracoes = 10000;
     let limite = 0.0001;
     let iteracao = 0;
     let valorX = (maxIntervalo + minIntervalo) / 2;
 
-    let fmin = calcularX(Derivada, minIntervalo)
-    let fmax = calcularX(Derivada,maxIntervalo)
+    let fmin = calcularX(Derivada, minIntervalo);
+    let fmax = calcularX(Derivada, maxIntervalo);
 
-    if(fmin*fmax > 0 ){
-        console.log("A derivada não cruxa o eixo x no intervalo indicado")
+    if (fmin * fmax > 0) {
+        console.log("A derivada não cruza o eixo x neste intervalo. Tente outro intervalo.");
+        return null;
     }
 
     let valorDerivada = calcularX(Derivada, valorX);
 
-    while(Math.abs(valorDerivada) > limite && iteracao < maxIteracoes){
-        if(Math.abs(valorDerivada) < limite){
-            return valorX;
-        }
+    while (Math.abs(valorDerivada) > limite && iteracao < maxIteracoes) {
 
-        if(valorDerivada > 0){
+        if (valorDerivada > 0) {
             maxIntervalo = valorX;
         } else {
             minIntervalo = valorX;
         }
-        
+
         valorX = (maxIntervalo + minIntervalo) / 2;
         valorDerivada = calcularX(Derivada, valorX);
         iteracao++;
     }
-        if(iteracao >= maxIteracoes){
-            console.log(
-                "Limite de iterações alcançado")
-            return null;
-        }    
+
+    if (iteracao >= maxIteracoes) {
+        console.log("Limite de iterações alcançado.");
+        return null;
+    }
 
     return valorX;
 }
+
 
 function minOuMax(derivada2, x){
     if(derivada2 == ""){
@@ -225,35 +226,149 @@ function minOuMax(derivada2, x){
 
 
 
-//execuçao do programa
-//ENTRADA
-let funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
-
-console.log("\nFunção original:", funcao);
+//      FUNÇÕES DE INTEGRAIS
 
 
-//DERIVADAS
-//Derivada de primeiro grau
-primeira_derivada = inserir_exibir(funcao, "primeiro");
+// Integra o termo oposto ao tombo
+function integralSubida(coeficiente, expoente) {
+    let novoExpoente = expoente + 1;
 
-//Derivada de segundo grau
-segunda_derivada = inserir_exibir(primeira_derivada, "segundo")
+    // coeficiente / novoExpoente
+    let novoCoeficiente = coeficiente / novoExpoente;
+
+    return [novoCoeficiente, novoExpoente];
+}
+
+// Calcula integral de todos os termos
+function calcularIntegral(funcoes) {
+    let integralFuncoes = [];
+
+    for (let i = 0; i < funcoes.length; i++) {
+        let { coeficiente, expoente } = funcoes[i];
+
+        // constante vira coef * x
+        if (expoente === 0) {
+            integralFuncoes.push([coeficiente, 1]);
+        } else {
+            integralFuncoes.push(integralSubida(coeficiente, expoente));
+        }
+    }
+
+    return integralFuncoes;
+}
+
+// Exibir integral em formato de string (+ C)
+function exibirIntegral(integralFuncoes) {
+    let resultado = "";
+    let primeira = true;
+
+    for (let i = 0; i < integralFuncoes.length; i++) {
+        let [coeficiente, expoente] = integralFuncoes[i];
+
+        if (coeficiente != 0) {
+            let sinal = coeficiente > 0 ? (primeira ? '' : ' + ') : ' - ';
+            let valorAbsoluto = Math.abs(coeficiente);
+
+            valorAbsoluto = parseFloat(valorAbsoluto.toFixed(2));
+
+            if (expoente == 0)
+                resultado += `${sinal}${valorAbsoluto}`;
+            else if (expoente == 1)
+                resultado += `${sinal}${valorAbsoluto}x`;
+            else
+                resultado += `${sinal}${valorAbsoluto}x^${expoente}`;
+
+            primeira = false;
+        }
+    }
+
+    if (resultado == "") {
+        resultado = "0";
+    }
+
+    resultado += " + C";
+
+    console.log(resultado);
+    return resultado;
+}
+
+// Controlador da integral
+function inserir_integral(funcao) {
+    let funcoes = Funcoes(funcao);
+    let integralFuncoes = calcularIntegral(funcoes);
+
+    console.log("\nIntegral indefinida:");
+    return exibirIntegral(integralFuncoes);
+}
 
 
-//PONTO CRÍTICO
-//X do ponto crítico
-let xZero = pontoCritico(primeira_derivada);
+//Execução do programa
 
-//Y do ponto crítico
-let yZero = calcularX(funcao, xZero)
+console.log("===== MENU =====");
+console.log("1 - Calcular derivadas");
+console.log("2 - Calcular integrais");
+console.log("================");
 
-//Tipo do ponto crítico (Máximo ou Mínimo)
-tipo_ponto = minOuMax(segunda_derivada, xZero);
 
-if(xZero == null){
-    console.log("Ponto crítico inexistente ou fora do requisitos de intervalo")
+//Inserção de escolha
+let escolha = prompt("Escolha uma opção: ");
 
-}else{
-    console.log(`Ponto ${tipo_ponto}: (${xZero.toFixed(4)},${yZero.toFixed(4)})` );
-    
+if (escolha == "1") {
+
+    //Inserção de função base
+    let funcao = prompt("Digite a função (ex: 3x^2 - 2x + 1): ");
+
+    console.log("\nFunção original:", funcao);
+
+    // 1ª derivada
+    primeira_derivada = inserir_exibir(funcao, "primeiro");
+
+    // 2ª derivada
+    segunda_derivada = inserir_exibir(primeira_derivada, "segundo");
+
+    // Escolha do intervalo
+    console.log("\nDeseja inserir um intervalo personalizado para o cálculo do ponto crítico?");
+    console.log("1 - Sim");
+    console.log("2 - Não (usar intervalo padrão [-100, 100])");
+
+    let escolhaIntervalo = prompt("Escolha: ");
+
+    let minIntervalo, maxIntervalo;
+
+    if (escolhaIntervalo == "1") {
+        minIntervalo = parseFloat(prompt("Digite o limite inferior do intervalo: "));
+        maxIntervalo = parseFloat(prompt("Digite o limite superior do intervalo: "));
+        console.log(`\nIntervalo definido pelo usuário: [${minIntervalo}, ${maxIntervalo}]`);
+    } else {
+        minIntervalo = -100;
+        maxIntervalo = 100;
+        console.log("\nIntervalo padrão utilizado: [-100, 100]");
+    }
+
+    // Cálculo do ponto crítico
+    let xZero = pontoCritico(primeira_derivada, minIntervalo, maxIntervalo);
+
+    if (xZero == null) {
+        console.log("Ponto crítico inexistente ou fora do intervalo.");
+    } else {
+        let yZero = calcularX(funcao, xZero);
+        let tipo_ponto = minOuMax(segunda_derivada, xZero);
+
+        console.log(`Ponto ${tipo_ponto}: (${xZero.toFixed(4)}, ${yZero.toFixed(4)})`);
+    }
+
+}
+ else if (escolha == "2") {
+
+    // INTEGRAIS 
+
+    //Inserção de função base
+    let funcao = prompt("Digite a função para integrar (ex: 3x^2 - 2x + 1): ");
+
+    console.log("\nFunção original:", funcao);
+
+    inserir_integral(funcao);
+
+} else {
+    console.log("Opção inválida.");
 }
