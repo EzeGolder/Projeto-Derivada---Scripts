@@ -548,6 +548,7 @@ document.getElementById("calcular").addEventListener("click", () => {
         // Utiliza n=4000 para uma boa precisao na aproximacao
         let areaAproximada = trapezios(funcaoEntrada, min, max, 4000); 
 
+
         // Tratamento de erro retornado pela funcao trapezios
         if (typeof areaAproximada === 'string' && areaAproximada.startsWith('Erro')) {
             document.getElementById("resultado").innerText = areaAproximada;
@@ -559,6 +560,8 @@ document.getElementById("calcular").addEventListener("click", () => {
             `Funcao: ${funcaoEntrada}\n` +
             `Intervalo: [${min}, ${max}]\n` +
             `Area aproximada = ${areaAproximada.toFixed(6)}`;
+
+        
     }
 
     /* ----------------------------------------------------
