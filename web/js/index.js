@@ -479,9 +479,9 @@ document.getElementById("calcular").addEventListener("click", () => {
 
         texto =
             `=== INTEGRAL NUMÉRICA — REGRA DOS TRAPÉZIOS ===\n` +
-            `Função: ${funcao}\n` +
-            `Intervalo: [${min}, ${max}]\n` +
-            `Área aproximada = ${area.toFixed(6)}`;
+            `\nFunção: ${funcao}\n` +
+            `\nIntervalo: [${min}, ${max}]\n` +
+            `\nÁrea aproximada = ${area.toFixed(6)}`;
     }
 
     /* ----------------------------------------------------
