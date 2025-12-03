@@ -214,47 +214,73 @@ function calcularX(funcao, x) {
    3. Volta x onde f'(x) = 0
 */
 
-function pontoCritico(derivadaStr, min = -100, max = 100) {
-    let passos = 2000;
-    let delta = (max - min) / passos;
+function pontosCriticos(derivadaStr, min = -100, max = 100) {
+    const N = 5000;         // precisão do scan
+    const EPS = 1e-6;       // tolerância para quase-zero
+    const delta = (max - min) / N;
+
+    const f = x => calcularX(derivadaStr, x);
 
     let candidatos = [];
-    let anterior = calcularX(derivadaStr, min);
+    let xPrev = min;
+    let fPrev = f(xPrev);
 
-    // Procura onde f' muda de sinal
-    for (let i = 1; i <= passos; i++) {
+    // 1) VARREDURA PROCURANDO MUDANÇA DE SINAL OU QUASE-ZERO
+    for (let i = 1; i <= N; i++) {
         let x = min + i * delta;
-        let atual = calcularX(derivadaStr, x);
+        let fx = f(x);
 
-        if (anterior * atual < 0)
+        // mudança de sinal
+        if (fPrev * fx < 0) {
             candidatos.push([x - delta, x]);
+        }
 
-        if (Math.abs(atual) < 0.0005)
+        // quase zero
+        if (Math.abs(fx) < EPS) {
             candidatos.push([x - delta, x + delta]);
+        }
 
-        anterior = atual;
+        xPrev = x;
+        fPrev = fx;
     }
 
-    if (candidatos.length === 0) return null;
+    // se não achar nada
+    if (candidatos.length === 0) return [];
 
-    // Refinamento por bisecção
-    for (let [a, b] of candidatos) {
-        let left = a, right = b;
-        for (let k = 0; k < 200; k++) {
-            let m = (left + right) / 2;
-            let fm = calcularX(derivadaStr, m);
+    // 2) FUNÇÃO AUXILIAR DE BISSEÇÃO
+    function bissection(a, b) {
+        let fa = f(a);
+        let fb = f(b);
 
-            if (Math.abs(fm) < 0.0001)
-                return m;
+        for (let i = 0; i < 100; i++) {
+            let m = (a + b) / 2;
+            let fm = f(m);
 
-            let fl = calcularX(derivadaStr, left);
+            if (Math.abs(fm) < 1e-9) return m;
 
-            if (fl * fm < 0) right = m;
-            else left = m;
+            if (fa * fm < 0) {
+                b = m;
+                fb = fm;
+            } else {
+                a = m;
+                fa = fm;
+            }
+        }
+        return (a + b) / 2;
+    }
+
+    // 3) REFINA CADA INTERVALO → raiz real
+    let roots = candidatos.map(([a, b]) => bissection(a, b));
+
+    // 4) REMOVE DUPLICATAS (raízes repetidas)
+    let finais = [];
+    for (let r of roots) {
+        if (!finais.some(v => Math.abs(v - r) < 1e-5)) {
+            finais.push(r);
         }
     }
 
-    return null;
+    return finais;
 }
 
 // Determina se é mínimo ou máximo via derivada segunda
@@ -344,7 +370,6 @@ function trapezios(funcaoStr, a, b, n = 2000) {
     BOTÃO "CALCULAR" — LÓGICA PRINCIPAL
    
 */
-
 document.getElementById("calcular").addEventListener("click", () => {
 
     let funcao = document.getElementById("funcao").value;
@@ -353,18 +378,44 @@ document.getElementById("calcular").addEventListener("click", () => {
     let termos = Funcoes(funcao);
     let texto = "";
 
-
-
-    /* 
-        DERIVADAS
-    */
+    /* ----------------------------------------------------
+       DERIVADAS + PONTOS CRÍTICOS (AGORA VÁRIOS)
+    -----------------------------------------------------*/
     if (operacao === "derivada") {
 
-        let d1 = exibirResultado(calcularDerivada(termos));
-        let d1limpo = d1.replace(/\s+/g, '');
-        let d2 = exibirResultado(calcularDerivada(Funcoes(d1limpo)));
+        // 1) DERIVADA 1
+        let d1array = calcularDerivada(termos);
+        let d1 = exibirResultado(d1array);
 
-        // Escolha do intervalo
+        // 2) Construir string limpa da derivada
+        let d1limpo = d1array
+            .filter(([c,e]) => c !== 0)
+            .map(([c,e]) => {
+                let cs = Number(c).toString();
+                if (e === 0) return `${cs}`;
+                if (e === 1) return `${cs}x`;
+                return `${cs}x^${e}`;
+            })
+            .join("+")
+            .replace(/\+\-/g, "-");
+
+        // 3) DERIVADA 2
+        let d2array = calcularDerivada(Funcoes(d1limpo));
+        let d2 = exibirResultado(d2array);
+
+        // String limpa para avaliar min ou max
+        let d2funcStr = d2array
+            .filter(([c,e]) => c !== 0)
+            .map(([c,e]) => {
+                let cs = Number(c).toString();
+                if (e === 0) return `${cs}`;
+                if (e === 1) return `${cs}x`;
+                return `${cs}x^${e}`;
+            })
+            .join("+")
+            .replace(/\+\-/g, "-");
+
+        // 4) Intervalo
         let intervaloModo = document.querySelector("input[name='intervaloModo']:checked").value;
         let min, max;
 
@@ -373,8 +424,7 @@ document.getElementById("calcular").addEventListener("click", () => {
             max = parseFloat(document.getElementById("maxIntervalo").value);
 
             if (isNaN(min) || isNaN(max) || min >= max) {
-                document.getElementById("resultado").innerText =
-                    "Erro: intervalo inválido.";
+                document.getElementById("resultado").innerText = "Erro: intervalo inválido.";
                 return;
             }
         } else {
@@ -382,34 +432,36 @@ document.getElementById("calcular").addEventListener("click", () => {
             max = 100;
         }
 
-        let xCrit = pontoCritico(d1limpo, min, max);
+        // 5) ACHAR TODOS OS PONTOS CRÍTICOS
+        let xsCrit = pontosCriticos(d1limpo, min, max);
 
-        if (xCrit === null) {
-            texto =
-                `1ª Derivada: ${d1}
-                2ª Derivada: ${d2}
+        texto =
+            `=== DERIVADAS ===\n` +
+            `f'(x) = ${d1}\n` +
+            `f''(x) = ${d2}\n\n`;
 
-                Não há ponto crítico no intervalo (${min}, ${max}).`;
-        } else {
-            let yCrit = calcularX(funcao, xCrit);
-            let tipo = minOuMax(d2, xCrit);
+        if (xsCrit.length === 0) {
+            texto += `Nenhum ponto crítico encontrado no intervalo (${min}, ${max}).`;
+        } 
+        else {
 
-            texto =
-                `1ª Derivada: ${d1}
-                2ª Derivada: ${d2}
+            texto += `=== PONTOS CRÍTICOS (${xsCrit.length}) ===\n\n`;
 
-                Ponto crítico encontrado:
-                x = ${xCrit.toFixed(4)}
-                y = ${yCrit.toFixed(4)}
-                Tipo: ${tipo}`;
+            xsCrit.forEach(xCrit => {
+                let yCrit = calcularX(funcao, xCrit);
+                let tipo = minOuMax(d2funcStr, xCrit);
+
+                texto +=
+                    `x = ${xCrit.toFixed(6)}\n` +
+                    `y = ${yCrit.toFixed(6)}\n` +
+                    `Classificação: ${tipo}\n\n`;
+            });
         }
     }
 
-
-
-    /* 
-        INTEGRAL NUMÉRICA
-    */
+    /* ----------------------------------------------------
+       INTEGRAL NUMÉRICA — TRAPÉZIOS
+    -----------------------------------------------------*/
     else if (operacao === "trapz") {
 
         let minInput = parseFloat(document.getElementById("minIntervalo").value);
@@ -419,31 +471,26 @@ document.getElementById("calcular").addEventListener("click", () => {
         let max = !isNaN(maxInput) ? maxInput : 100;
 
         if (isNaN(min) || isNaN(max) || min >= max) {
-            document.getElementById("resultado").innerText =
-                "Erro: intervalo inválido.";
+            document.getElementById("resultado").innerText = "Erro: intervalo inválido.";
             return;
         }
 
         let area = trapezios(funcao, min, max, 4000);
 
         texto =
-            `Integral numérica (Regra dos Trapézios)
-            Função: ${funcao}
-            Intervalo: [${min}, ${max}]
-            Área aproximada = ${area}`;
+            `=== INTEGRAL NUMÉRICA — REGRA DOS TRAPÉZIOS ===\n` +
+            `Função: ${funcao}\n` +
+            `Intervalo: [${min}, ${max}]\n` +
+            `Área aproximada = ${area.toFixed(6)}`;
     }
 
-
-
-    /*
-        INTEGRAL SIMBÓLICA
-    */
+    /* ----------------------------------------------------
+       INTEGRAL SIMBÓLICA
+    -----------------------------------------------------*/
     else {
         let integral = exibirIntegral(calcularIntegral(termos));
-        texto = `Integral indefinida:\n${integral}`;
+        texto = `=== INTEGRAL INDEFINIDA ===\nF(x) = ${integral}`;
     }
-
-
 
     // Exibir no HTML
     document.getElementById("resultado").innerText = texto;
