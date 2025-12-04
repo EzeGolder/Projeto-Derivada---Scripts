@@ -86,8 +86,10 @@ atualizarVisibilidadeIntervalo();
  */
 
 /**
- * Converte strings que representam fracoes (ex: "1/3") para numeros decimais.
- * @param {string} fracao - A string que pode conter uma fracao ou um numero.
+ * Converte strings que representam fracoes (ex: "1/3") para numeros 
+ * decimais.
+ * @param {string} fracao - A string que pode conter uma fracao ou 
+ * um numero.
  * @returns {number} O valor numerico da fracao.
  */
 function parseFracao(fracao) {
@@ -102,15 +104,19 @@ function parseFracao(fracao) {
 
 
 /**
- * Transforma a string de entrada da funcao em um array de monomios.
- * Ex: "3x^2 - 4x + 1/2" -> [ {coef: 3, exp: 2}, {coef: -4, exp: 1}, {coef: 0.5, exp: 0} ]
+ * Transforma a string de entrada da funcao em um array 
+ * de monomios.
+ * Ex: "3x^2 - 4x + 1/2" -> [ {coef: 3, exp: 2}, 
+ * {coef: -4, exp: 1}, {coef: 0.5, exp: 0} ]
  * @param {string} funcaoStr - A funcao polinomial em formato string.
  * @returns {Array<object>} Um array de objetos representando cada monomio.
  */
 function Funcoes(funcaoStr) {
-    let funcaoLimpa = funcaoStr.toLowerCase().replace(/\s+/g, ''); // Limpa espacos e minusculas
+    // Limpa espacos e minusculas
+    let funcaoLimpa = funcaoStr.toLowerCase().replace(/\s+/g, ''); 
 
-    // Garante que a string comece com um sinal para facilitar o parse (ex: "x^2" -> "+x^2")
+    // Garante que a string comece com um sinal para facilitar o parse 
+    // (ex: "x^2" -> "+x^2")
     if (funcaoLimpa[0] !== '+' && funcaoLimpa[0] !== '-')
         funcaoLimpa = '+' + funcaoLimpa;
 
@@ -152,7 +158,8 @@ function Funcoes(funcaoStr) {
 
         // LOGICA PARA SEPARACAO DE TERMOS (+ ou -)
         else if (caracter === '+' || caracter === '-') {
-            // Se houver algo em termoAtual, e um termo constante anterior (ex: "+1/2" antes de "+x")
+            // Se houver algo em termoAtual, e um termo constante 
+            // anterior (ex: "+1/2" antes de "+x")
             if (termoAtual !== "")
                 monomios.push({ coeficiente: parseFracao(termoAtual), expoente: 0 });
 
@@ -248,6 +255,27 @@ function calcularX(funcaoStr, valorX) {
 // PONTO CRITICO (MAXIMOS / MINIMOS)
 // =========================================================================
 
+// FUNCAO AUXILIAR DE BISSECCAO (Refinamento da raiz)
+function bisseccao(a, b, funcParaAcharRaiz) { // <-- Novo argumento
+    let fa = funcParaAcharRaiz(a); // <-- Usa o argumento
+    
+    for (let i = 0; i < 100; i++) {
+        let m = (a + b) / 2;
+        let fm = funcParaAcharRaiz(m); // <-- Usa o argumento
+
+        if (Math.abs(fm) < 1e-9) return m;
+
+        if (fa * fm < 0) {
+            b = m;
+        } else {
+            a = m;
+            fa = fm;
+        }
+    }
+    return (a + b) / 2;
+}
+
+
 /**
  * Encontra as raizes da derivada primeira (f'(x) = 0) usando uma combinacao
  * de varredura (scan) e o Metodo da Bisseccao (refinamento).
@@ -257,8 +285,8 @@ function calcularX(funcaoStr, valorX) {
  * @returns {Array<number>} Array de valores x onde f'(x) = 0.
  */
 function pontosCriticos(derivadaStr, min = -100, max = 100) {
-    const N = 5000;         // Precisao da varredura (numero de passos)
-    const EPS = 1e-6;       // Tolerancia para considerar um valor como "quase zero"
+    const N = 5000;  // Precisao da varredura (numero de passos)
+    const EPS = 1e-6;  // Tolerancia para considerar um valor como "quase zero"
     const delta = (max - min) / N; // Tamanho de cada passo no scan
 
     // Funcao auxiliar que calcula o valor de f'(x)
@@ -286,33 +314,10 @@ function pontosCriticos(derivadaStr, min = -100, max = 100) {
         xAnterior = x;
         fAnterior = fx;
     }
-
     if (candidatos.length === 0) return [];
 
-    // 2) FUNCAO AUXILIAR DE BISSECCAO (Refinamento da raiz)
-    function bisseccao(a, b) {
-        let fa = fDerivada(a);
-        
-        // Maximo de 100 iteracoes para convergencia
-        for (let i = 0; i < 100; i++) {
-            let m = (a + b) / 2; // Ponto medio
-            let fm = fDerivada(m);
-
-            if (Math.abs(fm) < 1e-9) return m; // Se proximo de zero, encontramos a raiz
-
-            // Reduz o intervalo onde o sinal inverte (a * m < 0 ou b * m < 0)
-            if (fa * fm < 0) {
-                b = m;
-            } else {
-                a = m;
-                fa = fm; // A nova raiz esta no intervalo [m, b]
-            }
-        }
-        return (a + b) / 2; // Retorna a melhor aproximacao apos 100 iteracoes
-    }
-
     // 3) REFINA CADA INTERVALO CANDIDATO
-    let raizes = candidatos.map(([a, b]) => bisseccao(a, b));
+    let raizes = candidatos.map(([a, b]) => bisseccao(a, b, fDerivada));
 
     // 4) REMOVE DUPLICATAS (raizes muito proximas)
     let raizesFinais = [];
@@ -422,6 +427,7 @@ function trapezios(funcaoStr, a, b, n = 2000) {
 
     // Loop de i = 1 ate n-1 (termos internos: f(a+h) ate f(b-h))
     for (let i = 1; i < n; i++) {
+        
         let x = a + i * h; // Ponto x onde a funcao sera avaliada
         soma += calcularX(funcaoStr, x); // Avalia f(x_i)
     }
@@ -430,6 +436,7 @@ function trapezios(funcaoStr, a, b, n = 2000) {
     return (h / 2) * (
         calcularX(funcaoStr, a) + // f(a)
         2 * soma + // 2 * [ f(x1) + f(x2) + ... ]
+
         calcularX(funcaoStr, b) // f(b)
     );
 }
@@ -464,8 +471,10 @@ document.getElementById("calcular").addEventListener("click", () => {
                 if (e === 0) return `${cs}`;
                 if (e === 1) return `${cs}x`;
                 return `${cs}x^${e}`;
+
+
             })
-            .join("+")
+            .join("+") //Junta todos os elementos do array de strings, colocando um + entre eles
             .replace(/\+\-/g, "-"); // Corrige a dupla adicao de sinal (ex: "+-4x")
 
         // 3) DERIVADA 2 (f''(x))
@@ -481,8 +490,8 @@ document.getElementById("calcular").addEventListener("click", () => {
                 if (e === 1) return `${cs}x`;
                 return `${cs}x^${e}`;
             })
-            .join("+")
-            .replace(/\+\-/g, "-");
+            .join("+") //Junta todos os elementos do array de strings, colocando um + entre eles
+            .replace(/\+\-/g, "-"); //Troca "+-" por -
 
         // 4) Definicao do Intervalo de busca para os pontos criticos
         let modoIntervalo = document.querySelector("input[name='intervaloModo']:checked").value;
